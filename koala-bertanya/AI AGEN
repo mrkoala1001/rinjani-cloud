@@ -1,0 +1,1 @@
+php artisan blog:auto-generate "Topik Pilihan Anda"

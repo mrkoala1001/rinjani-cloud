@@ -1,0 +1,5 @@
+openai
+crewai
+langchain-google-genai
+langchain-groq
+groq

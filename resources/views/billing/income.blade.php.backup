@@ -1,0 +1,332 @@
+@extends('layouts.app')
+
+@section('title', 'Laporan Pemasukan')
+@section('header_title', 'Riwayat Pemasukan & Pembayaran')
+
+@section('content')
+<div class="max-w-7xl mx-auto" x-data="{ 
+    showModal: false,
+    editModalOpen: false,
+    editData: {},
+    sourceMode: 'existing', 
+    customerId: '',
+    newCustomerName: '',
+    customers: {{ $customers->map(function($c) { return ['id' => $c->id, 'name' => $c->name, 'bill_amount' => $c->bill_amount, 'location' => $c->location]; })->toJson() }},
+    selectedCustomer: null,
+    updateSelected() {
+        this.selectedCustomer = this.customers.find(c => c.id == this.customerId) || null;
+    }
+}">
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- Today -->
+        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-green-100 text-sm font-medium">Pemasukan Hari Ini</p>
+                    <h3 class="text-3xl font-bold mt-2">Rp {{ number_format($summaryToday->total ?? 0, 0, ',', '.') }}</h3>
+                    <p class="text-green-100 text-xs mt-1">{{ $summaryToday->count ?? 0 }} transaksi</p>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-full p-4">
+                    <i class="fas fa-calendar-day text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- This Month -->
+        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-blue-100 text-sm font-medium">Pemasukan Bulan Ini</p>
+                    <h3 class="text-3xl font-bold mt-2">Rp {{ number_format($summaryMonth->total ?? 0, 0, ',', '.') }}</h3>
+                    <p class="text-blue-100 text-xs mt-1">{{ $summaryMonth->count ?? 0 }} transaksi</p>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-full p-4">
+                    <i class="fas fa-calendar-alt text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total -->
+        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-purple-100 text-sm font-medium">Total Pemasukan</p>
+                    <h3 class="text-3xl font-bold mt-2">Rp {{ number_format($summaryTotal->total ?? 0, 0, ',', '.') }}</h3>
+                    <p class="text-purple-100 text-xs mt-1">{{ $summaryTotal->count ?? 0 }} transaksi</p>
+                </div>
+                <div class="bg-white bg-opacity-20 rounded-full p-4">
+                    <i class="fas fa-chart-line text-3xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Bar -->
+     <div class="mb-6 flex justify-end">
+        <button @click="showModal = true" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow transition flex items-center">
+            <i class="fas fa-plus mr-2"></i> Input Pembayaran
+        </button>
+    </div>
+
+    <!-- Table (Unchanged) -->
+    <!-- ... -->
+    <div class="bg-white shadow-md rounded-lg overflow-hidden border-t-4 border-green-500">
+        <!-- ... -->
+        <div class="overflow-x-auto">
+             <table class="min-w-full leading-normal">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-600 uppercase text-xs leading-normal">
+                        <th class="py-3 px-6 text-left">Tanggal</th>
+                        <th class="py-3 px-6 text-left">Kategori</th>
+                        <th class="py-3 px-6 text-left">Pelanggan / Kode</th>
+                        <th class="py-3 px-6 text-left">Keterangan</th>
+                        <th class="py-3 px-6 text-right">Jumlah (Rp)</th>
+                        <th class="py-3 px-6 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-600 text-sm font-light">
+                    @forelse($incomes as $income)
+                    <tr class="border-b border-gray-200 hover:bg-gray-100">
+                        <td class="py-3 px-6 text-left whitespace-nowrap">
+                            {{ date('d M Y H:i', strtotime($income->date_sold)) }}
+                        </td>
+                         <td class="py-3 px-6 text-left">
+                            <span class="px-2 py-1 rounded-full text-xs font-bold 
+                                {{ $income->category == 'Voucher' ? 'bg-purple-100 text-purple-700' : 
+                                  ($income->category == 'Member' ? 'bg-blue-100 text-blue-700' : 
+                                  ($income->category == 'Reseller' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700')) }}">
+                                {{ $income->category }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-6 text-left">
+                            @if($income->customer_name)
+                                <div class="font-bold">{{ $income->customer_name }}</div>
+                            @endif
+                            <div class="font-mono text-xs text-gray-500">{{ $income->voucher_code }}</div>
+                        </td>
+                        <td class="py-3 px-6 text-left">
+                            {{ $income->profile }}
+                            @if($income->payment_method)
+                                <div class="text-xs text-gray-400">Via: {{ $income->payment_method }}</div>
+                            @endif
+                        </td>
+                        <td class="py-3 px-6 text-right font-bold text-green-600">
+                            Rp {{ number_format($income->price, 0, ',', '.') }}
+                        </td>
+                        <td class="py-3 px-6 text-center">
+                            @if($income->server == 'manual')
+                                <button @click="editData = { id: {{ $income->id }}, category: '{{ $income->category }}', date_sold: '{{ date('Y-m-d', strtotime($income->date_sold)) }}', bill_amount: '{{ $income->bill_amount }}', paid_amount: '{{ $income->paid_amount }}', payment_method: '{{ $income->payment_method }}', notes: '{{ $income->notes }}' }; editModalOpen = true" class="text-blue-500 hover:text-blue-700 mx-1" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <a href="{{ route('billing.printIncome', $income->id) }}" target="_blank" class="text-gray-500 hover:text-gray-700 mx-1" title="Print Struk">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                @if($income->proof_image)
+                                    <a href="{{ asset('storage/' . $income->proof_image) }}" target="_blank" class="text-blue-500 hover:text-blue-700 mx-1" title="Lihat Bukti">
+                                        <i class="fas fa-image"></i>
+                                    </a>
+                                @endif
+                            @endif
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="py-3 px-6 text-center">Tidak ada data pemasukan.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Manual Input Modal -->
+    <div x-show="showModal" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="showModal" @click="showModal = false" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                <form action="{{ route('billing.storeIncome') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Input Pembayaran</h3>
+                        
+                        <div class="space-y-4">
+                            <!-- Source Selection -->
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Sumber Pelanggan</label>
+                                <div class="flex space-x-4">
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="source_mode" value="existing" x-model="sourceMode" class="form-radio text-green-600">
+                                        <span class="ml-2">Pelanggan Ada</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="source_mode" value="new" x-model="sourceMode" class="form-radio text-green-600">
+                                        <span class="ml-2">Pelanggan Baru / Guest</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <!-- Customer Select / Input -->
+                            <div x-show="sourceMode === 'existing'">
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Pilih Pelanggan</label>
+                                <select name="customer_id" x-model="customerId" @change="updateSelected()" class="w-full border rounded p-2 text-sm bg-white">
+                                    <option value="">-- Pilih Pelanggan --</option>
+                                    @foreach($customers as $c)
+                                        <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->type }})</option>
+                                    @endforeach
+                                </select>
+                                
+                                <!-- Selected Customer Info -->
+                                <template x-if="selectedCustomer">
+                                    <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                                        <p><strong>Nama:</strong> <span x-text="selectedCustomer.name"></span></p>
+                                        <p><strong>Tagihan:</strong> Rp <span x-text="new Intl.NumberFormat('id-ID').format(selectedCustomer.bill_amount)"></span></p>
+                                        <p><strong>Lokasi:</strong> <span x-text="selectedCustomer.location || '-'"></span></p>
+                                    </div>
+                                </template>
+                            </div>
+                            <div x-show="sourceMode === 'new'">
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Nama Pelanggan</label>
+                                <input type="text" name="new_customer_name" x-model="newCustomerName" class="w-full border rounded p-2 text-sm">
+                            </div>
+
+                            <!-- Category -->
+                             <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Kategori</label>
+                                <select name="category" class="w-full border rounded p-2 text-sm bg-white">
+                                    <option value="Member">Member (Hotspot)</option>
+                                    <option value="Reseller">Reseller</option>
+                                    <option value="Voucher">Voucher</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                </select>
+                            </div>
+
+                            <!-- Amounts -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Total Tagihan (Rp)</label>
+                                    <input type="number" name="bill_amount" required class="w-full border rounded p-2 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Jumlah Bayar (Rp)</label>
+                                    <input type="number" name="paid_amount" required class="w-full border rounded p-2 text-sm font-bold text-green-600">
+                                </div>
+                            </div>
+
+                            <!-- Date & Method -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Tanggal Bayar</label>
+                                    <input type="date" name="date_sold" value="{{ date('Y-m-d') }}" required class="w-full border rounded p-2 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Metode</label>
+                                    <select name="payment_method" class="w-full border rounded p-2 text-sm bg-white">
+                                        <option value="Cash">Tunai (Cash)</option>
+                                        <option value="Transfer">Transfer Bank</option>
+                                        <option value="E-Wallet">E-Wallet (OVO/DANA/Gopay)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Proof -->
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Bukti Transaksi (Foto)</label>
+                                <input type="file" name="proof_image" accept="image/*" class="w-full border rounded p-2 text-sm">
+                            </div>
+                            
+                            <!-- Notes -->
+                             <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Catatan</label>
+                                <textarea name="notes" rows="2" class="w-full border rounded p-2 text-sm"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Simpan Pembayaran
+                        </button>
+                        <button type="button" @click="showModal = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Batal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div x-show="editModalOpen" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="editModalOpen" @click="editModalOpen = false" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
+                <form action="{{ route('billing.updateIncome') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="id" x-model="editData.id">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Edit Pemasukan</h3>
+                        
+                        <div class="space-y-4">
+                            <!-- Category -->
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Kategori</label>
+                                <select name="category" x-model="editData.category" class="w-full border rounded p-2 text-sm bg-white">
+                                    <option value="Member">Member (Hotspot)</option>
+                                    <option value="Reseller">Reseller</option>
+                                    <option value="Voucher">Voucher</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                </select>
+                            </div>
+
+                            <!-- Amounts -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Total Tagihan (Rp)</label>
+                                    <input type="number" name="bill_amount" x-model="editData.bill_amount" required class="w-full border rounded p-2 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Jumlah Bayar (Rp)</label>
+                                    <input type="number" name="paid_amount" x-model="editData.paid_amount" required class="w-full border rounded p-2 text-sm font-bold text-green-600">
+                                </div>
+                            </div>
+
+                            <!-- Date & Method -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Tanggal Bayar</label>
+                                    <input type="date" name="date_sold" x-model="editData.date_sold" required class="w-full border rounded p-2 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-gray-700 text-sm font-bold mb-2">Metode</label>
+                                    <select name="payment_method" x-model="editData.payment_method" class="w-full border rounded p-2 text-sm bg-white">
+                                        <option value="Cash">Tunai (Cash)</option>
+                                        <option value="Transfer">Transfer Bank</option>
+                                        <option value="E-Wallet">E-Wallet (OVO/DANA/Gopay)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <!-- Notes -->
+                            <div>
+                                <label class="block text-gray-700 text-sm font-bold mb-2">Catatan</label>
+                                <textarea name="notes" x-model="editData.notes" rows="2" class="w-full border rounded p-2 text-sm"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Update Pemasukan
+                        </button>
+                        <button type="button" @click="editModalOpen = false" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Batal
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+@endsection
