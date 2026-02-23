@@ -13,6 +13,18 @@
     users: window.hotspotData || [],
     viewModalOpen: false,
     viewData: {},
+    
+    // Pagination
+    page: 1,
+    perPage: 25,
+    get totalPages() {
+        return Math.ceil(this.filteredUsers.length / this.perPage);
+    },
+    get paginatedUsers() {
+        let start = (this.page - 1) * this.perPage;
+        return this.filteredUsers.slice(start, start + this.perPage);
+    },
+
     get filteredUsers() {
         if (this.search === '') return this.users;
         const q = this.search.toLowerCase();
@@ -26,18 +38,11 @@
         );
     },
     init() {
+        this.$watch('search', () => this.page = 1);
         if (typeof Echo !== 'undefined') {
             Echo.channel('hotspot-monitoring.{{ auth()->id() }}')
                 .listen('HotspotDataUpdated', (e) => {
                     this.users = e.users;
-                })
-                .listen('HotspotUserConnected', (e) => {
-                    // Optional: Show notification
-                    console.log('User connected:', e.user.name);
-                })
-                .listen('HotspotUserDisconnected', (e) => {
-                    // Optional: Show notification
-                    console.log('User disconnected:', e.user.name);
                 });
         }
     }
@@ -76,7 +81,7 @@
                     </tr>
                 </thead>
                 <!-- Outer TBODY removed to avoid nesting -->
-                    <template x-for="(u, index) in filteredUsers" :key="u['.id']">
+                    <template x-for="(u, index) in paginatedUsers" :key="u['.id']">
                         <!-- SATU TBODY untuk setiap user -->
                         <tbody class="divide-y divide-gray-200 border-b border-gray-100" x-bind:key="u['.id'] + '-group'">
                             <!-- Comment Row - hanya tampil jika ada comment -->
@@ -88,7 +93,7 @@
                             </tr>
                             <!-- Data Row -->
                             <tr class="hover:bg-blue-50 transition border-b border-gray-100 text-[10px] whitespace-nowrap">
-                                <td class="px-4 py-2 text-gray-500 font-mono" x-text="index + 1"></td>
+                                <td class="px-4 py-2 text-gray-500 font-mono" x-text="((page - 1) * perPage) + index + 1"></td>
                                 <td class="px-4 py-2 text-gray-600 font-mono" x-text="u.server || '-'"></td>
                                 <td class="px-4 py-2 font-bold text-blue-600" x-text="u.user"></td>
                                 <td class="px-4 py-2 text-gray-600 font-mono">
@@ -115,21 +120,36 @@
                             </tr>
                         </tbody>
                     </template>
-                    
-                    <!-- Empty State -->
-                    <template x-if="filteredUsers.length === 0">
-                        <tr>
-                            <td colspan="8" class="px-5 py-12 bg-white text-center">
-                                <div class="flex flex-col items-center justify-center">
-                                    <i class="fas fa-users-slash text-gray-300 text-4xl mb-3"></i>
-                                    <p class="text-gray-400 italic font-medium">
-                                        <span x-show="search === ''">Tidak ada user online saat ini.</span>
-                                        <span x-show="search !== ''">Tidak ada user yang sesuai dengan pencarian.</span>
-                                    </p>
-                                </div>
-                            </td>
-                        </tr>
-                    </template>
+            </table>
+        </div>
+        
+        <!-- Pagination Controls -->
+        <div class="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between" x-show="totalPages > 1">
+            <div class="text-xs font-bold text-gray-500">
+                Halaman <span x-text="page"></span> dari <span x-text="totalPages"></span>
+            </div>
+            <div class="flex gap-2">
+                <button @click="page--" :disabled="page <= 1" class="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    Prev
+                </button>
+                <button @click="page++" :disabled="page >= totalPages" class="px-3 py-1 bg-white border border-gray-300 rounded text-xs font-bold text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition">
+                    Next
+                </button>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <template x-if="filteredUsers.length === 0">
+            <div class="px-5 py-12 bg-white text-center">
+                <div class="flex flex-col items-center justify-center">
+                    <i class="fas fa-users-slash text-gray-300 text-4xl mb-3"></i>
+                    <p class="text-gray-400 italic font-medium">
+                        <span x-show="search === ''">Tidak ada user online saat ini.</span>
+                        <span x-show="search !== ''">Tidak ada user yang sesuai dengan pencarian.</span>
+                    </p>
+                </div>
+            </div>
+        </template>
             </table>
         </div>
     </div>

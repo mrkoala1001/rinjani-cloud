@@ -14,6 +14,18 @@
     viewUser: {},
     editUser: {},
     profiles: {{ json_encode($profiles ?? []) }},
+    
+    // Pagination Logic
+    page: 1,
+    perPage: 15,
+    get totalPages() {
+        return Math.ceil(this.filteredUsers.length / this.perPage);
+    },
+    get paginatedUsers() {
+        let start = (this.page - 1) * this.perPage;
+        return this.filteredUsers.slice(start, start + this.perPage);
+    },
+
     toggleSort(key) {
         if (this.sortKey === key) {
             this.sortOrder = this.sortOrder === 'asc' ? 'desc' : 'asc';
@@ -21,6 +33,7 @@
             this.sortKey = key;
             this.sortOrder = 'asc';
         }
+        this.page = 1; // Reset to page 1 on sort
     },
     get filteredUsers() {
         let filtered = this.users.filter(u => 
@@ -96,7 +109,7 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200">
-                    <template x-for="u in filteredUsers" :key="u['.id']">
+                    <template x-for="u in paginatedUsers" :key="u['.id']">
                         <tr class="hover:bg-blue-50 transition group">
                             <td class="px-8 py-4">
                                 <div class="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors" x-text="u.name"></div>
@@ -131,7 +144,7 @@
                                             class="inline-flex items-center justify-center p-2 bg-yellow-100 text-yellow-600 hover:bg-yellow-600 hover:text-white rounded-lg transition shadow-sm" title="Edit Voucher">
                                         <i class="fas fa-edit text-sm"></i>
                                     </button>
-
+ 
                                     <!-- Delete Button -->
                                     <a :href="'{{ url('voucher/delete') }}/' + u['.id']" 
                                        onclick="return confirm('Hapus voucher ini dari MikroTik?')"
@@ -144,6 +157,21 @@
                     </template>
                 </tbody>
             </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="px-8 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between" x-show="totalPages > 1">
+            <div class="text-xs font-bold text-slate-500">
+                Halaman <span x-text="page"></span> dari <span x-text="totalPages"></span>
+            </div>
+            <div class="flex gap-2">
+                <button @click="page--" :disabled="page <= 1" class="px-4 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                    <i class="fas fa-chevron-left mr-1"></i> Prev
+                </button>
+                <button @click="page++" :disabled="page >= totalPages" class="px-4 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                    Next <i class="fas fa-chevron-right ml-1"></i>
+                </button>
+            </div>
         </div>
         
         <!-- Empty State -->

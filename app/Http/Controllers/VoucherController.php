@@ -216,22 +216,28 @@ class VoucherController extends Controller
     // --- Voucher List Module ---
     public function list()
     {
-        $users = [];
-        $client = $this->getClient();
-        $profiles = []; // Need profiles for edit dropdown
+        $userId = auth()->id();
+        $cacheKey = "hotspot_users_{$userId}";
         
-        if ($client) {
-            try {
-                // Fetch Users
-                // Make sure to get .id for operations
-                $users = $client->query('/ip/hotspot/user/print')->read();
-                
-                // Fetch Profiles for Edit Modal
-                $profiles = $client->query('/ip/hotspot/user/profile/print')->read();
-            } catch (Exception $e) {
-                session()->flash('error', 'RouterOS Error: ' . $e->getMessage());
+        // Caching selama 5 menit agar tidak terus-menerus nanya ke MikroTik
+        $data = \Cache::remember($cacheKey, 300, function() {
+            $client = $this->getClient();
+            $users = [];
+            $profiles = [];
+            
+            if ($client) {
+                try {
+                    $users = $client->query('/ip/hotspot/user/print')->read();
+                    $profiles = $client->query('/ip/hotspot/user/profile/print')->read();
+                } catch (Exception $e) {
+                    \Log::error("RouterOS Error: " . $e->getMessage());
+                }
             }
-        }
+            return compact('users', 'profiles');
+        });
+
+        $users = $data['users'] ?? [];
+        $profiles = $data['profiles'] ?? [];
         
         return view('vouchers.list', compact('users', 'profiles'));
     }
@@ -674,8 +680,7 @@ class VoucherController extends Controller
         }
 
         $vouchers = $query->orderBy('bh.first_login_at', 'desc')
-            ->limit(1000)
-            ->get();
+            ->paginate(50);
                 
         // Calculate revenue based on router time (if available) or server time
         $anchorDate = $serverDateTime ? $serverDateTime : now();

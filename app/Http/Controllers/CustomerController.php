@@ -26,7 +26,7 @@ class CustomerController extends Controller
         }
         
         $query->orderBy('name', 'asc');
-        $customers = $query->get();
+        $customers = $query->paginate(20);
 
         $titles = [
             'all' => 'Semua Pelanggan',

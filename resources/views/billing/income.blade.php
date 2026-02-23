@@ -15,7 +15,46 @@
             sourceMode: 'existing', 
             customerId: '',
             newCustomerName: '',
-            customers: @js($customers->map(function($c) { return ['id' => $c->id, 'name' => $c->name, 'bill_amount' => $c->bill_amount, 'location' => $c->location]; })),
+            
+            // Caching for Dropdown
+            customers: [],
+
+            // Summary UI Data
+            summaryToday: { total: 0, count: 0 },
+            summaryMonth: { total: 0, count: 0 },
+            summaryTotal: { total: 0, count: 0 },
+
+            init() {
+                // 1. Caching Summary Stats
+                const cachedSummary = localStorage.getItem('cache_billing_summary');
+                if (cachedSummary) {
+                    const cache = JSON.parse(cachedSummary);
+                    this.summaryToday = cache.today;
+                    this.summaryMonth = cache.month;
+                    this.summaryTotal = cache.total;
+                } else {
+                    this.summaryToday = @js($summaryToday);
+                    this.summaryMonth = @js($summaryMonth);
+                    this.summaryTotal = @js($summaryTotal);
+                }
+
+                // Update cache with fresh server data
+                localStorage.setItem('cache_billing_summary', JSON.stringify({
+                    today: @js($summaryToday),
+                    month: @js($summaryMonth),
+                    total: @js($summaryTotal)
+                }));
+
+                // 2. Caching Customer Dropdown Data (Large)
+                const cachedCustomers = localStorage.getItem('cache_customer_select');
+                if (cachedCustomers) {
+                    this.customers = JSON.parse(cachedCustomers);
+                } else {
+                    this.customers = @js($customers->map(function($c) { return ['id' => $c->id, 'name' => $c->name, 'bill_amount' => $c->bill_amount, 'location' => $c->location]; }));
+                    localStorage.setItem('cache_customer_select', JSON.stringify(this.customers));
+                }
+            },
+
             selectedCustomer: null,
             updateSelected() {
                 var self = this;
@@ -52,8 +91,8 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-white/80 text-sm font-medium">Pemasukan Hari Ini</p>
-                    <h3 class="text-3xl font-bold mt-2">Rp {{ number_format($summaryToday->total ?? 0, 0, ',', '.') }}</h3>
-                    <p class="text-white/80 text-xs mt-1">{{ $summaryToday->count ?? 0 }} transaksi</p>
+                    <h3 class="text-3xl font-bold mt-2" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(summaryToday.total || 0)"></h3>
+                    <p class="text-white/80 text-xs mt-1" x-text="(summaryToday.count || 0) + ' transaksi'"></p>
                 </div>
                 <div class="bg-white bg-opacity-20 rounded-full p-4">
                     <i class="fas fa-calendar-day text-3xl"></i>
@@ -66,8 +105,8 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-white/80 text-sm font-medium">Pemasukan Bulan Ini</p>
-                    <h3 class="text-3xl font-bold mt-2">Rp {{ number_format($summaryMonth->total ?? 0, 0, ',', '.') }}</h3>
-                    <p class="text-white/80 text-xs mt-1">{{ $summaryMonth->count ?? 0 }} transaksi</p>
+                    <h3 class="text-3xl font-bold mt-2" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(summaryMonth.total || 0)"></h3>
+                    <p class="text-white/80 text-xs mt-1" x-text="(summaryMonth.count || 0) + ' transaksi'"></p>
                 </div>
                 <div class="bg-white bg-opacity-20 rounded-full p-4">
                     <i class="fas fa-calendar-alt text-3xl"></i>
@@ -80,8 +119,8 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-white/80 text-sm font-medium">Total Pemasukan</p>
-                    <h3 class="text-3xl font-bold mt-2">Rp {{ number_format($summaryTotal->total ?? 0, 0, ',', '.') }}</h3>
-                    <p class="text-white/80 text-xs mt-1">{{ $summaryTotal->count ?? 0 }} transaksi</p>
+                    <h3 class="text-3xl font-bold mt-2" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(summaryTotal.total || 0)"></h3>
+                    <p class="text-white/80 text-xs mt-1" x-text="(summaryTotal.count || 0) + ' transaksi'"></p>
                 </div>
                 <div class="bg-white bg-opacity-20 rounded-full p-4">
                     <i class="fas fa-chart-line text-3xl"></i>
@@ -197,6 +236,11 @@
                 </tbody>
             </table>
         </div>
+        @if($incomes->hasPages())
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            {{ $incomes->appends(request()->query())->links() }}
+        </div>
+        @endif
     </div>
 
     <!-- Manual Input Modal -->

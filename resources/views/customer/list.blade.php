@@ -9,6 +9,26 @@
     showModal: false,
     editMode: false,
     viewMode: false,
+    isLoading: false,
+    customers: [],
+    
+    // Logic Cache
+    init() {
+        // 1. Coba ambil dari Cache dulu agar instan
+        const cachedData = localStorage.getItem('cache_customers_{{ $type }}');
+        if (cachedData && !this.search) {
+            this.customers = JSON.parse(cachedData);
+        } else {
+            // Jika tidak ada cache, gunakan data dari server (PHP)
+            this.customers = @js($customers->items());
+        }
+
+        // 2. Simpan data terbaru dari server ke cache untuk kunjungan berikutnya
+        if (!this.search) {
+            localStorage.setItem('cache_customers_{{ $type }}', JSON.stringify(@js($customers->items())));
+        }
+    },
+
     formData: {
         id: '',
         type: '{{ key_exists($type, ['MEMBER' => 1, 'PERUMAHAN' => 1, 'RESELLER' => 1]) ? $type : 'MEMBER' }}',
@@ -30,7 +50,6 @@
         } else {
             this.editMode = false;
             this.viewMode = false;
-            // Reset form but keep current type tab if valid
             this.formData = {
                 id: '',
                 type: '{{ key_exists($type, ['MEMBER' => 1, 'PERUMAHAN' => 1, 'RESELLER' => 1]) ? $type : 'MEMBER' }}',
@@ -108,34 +127,34 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
-                    @forelse($customers as $c)
+                    <template x-for="c in customers" :key="c.id">
                     <tr class="hover:bg-blue-50/30 transition group">
                         <td class="px-8 py-6">
-                            <div class="font-black text-slate-800 text-sm group-hover:text-blue-600 transition-colors">{{ $c->name }}</div>
-                            <span class="px-2.5 py-1 mt-2 inline-flex text-[9px] font-black uppercase tracking-tighter rounded-lg 
-                                {{ $c->type == 'MEMBER' ? 'bg-emerald-50 text-emerald-600 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.1)]' : 
-                                  ($c->type == 'RESELLER' ? 'bg-purple-50 text-purple-600 shadow-[inset_0_0_0_1px_rgba(147,51,234,0.1)]' : 'bg-blue-50 text-blue-600 shadow-[inset_0_0_0_1px_rgba(37,99,235,0.1)]') }}">
-                                {{ $c->type }}
+                            <div class="font-black text-slate-800 text-sm group-hover:text-blue-600 transition-colors" x-text="c.name"></div>
+                            <span class="px-2.5 py-1 mt-2 inline-flex text-[9px] font-black uppercase tracking-tighter rounded-lg" 
+                                :class="c.type == 'MEMBER' ? 'bg-emerald-50 text-emerald-600 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.1)]' : 
+                                   (c.type == 'RESELLER' ? 'bg-purple-50 text-purple-600 shadow-[inset_0_0_0_1px_rgba(147,51,234,0.1)]' : 'bg-blue-50 text-blue-600 shadow-[inset_0_0_0_1px_rgba(37,99,235,0.1)]')"
+                                x-text="c.type">
                             </span>
                         </td>
                         <td class="px-8 py-6">
                             <div class="flex items-start gap-2">
                                 <i class="fas fa-map-marker-alt text-slate-300 mt-1"></i>
                                 <div>
-                                    <div class="text-xs font-bold text-slate-600 leading-relaxed">{{ $c->location ? Str::limit($c->location, 30) : 'Alamat belum diset' }}</div>
-                                    @if($c->coordinates)
-                                    <a href="https://maps.google.com/?q={{ $c->coordinates }}" target="_blank" class="inline-flex items-center gap-1 text-[10px] font-black text-blue-500 hover:text-blue-700 uppercase tracking-widest mt-1">
+                                    <div class="text-xs font-bold text-slate-600 leading-relaxed" x-text="c.location ? (c.location.length > 30 ? c.location.substring(0,30) + '...' : c.location) : 'Alamat belum diset'"></div>
+                                    <template x-if="c.coordinates">
+                                    <a :href="'https://maps.google.com/?q=' + c.coordinates" target="_blank" class="inline-flex items-center gap-1 text-[10px] font-black text-blue-500 hover:text-blue-700 uppercase tracking-widest mt-1">
                                         View on Maps <i class="fas fa-external-link-alt text-[8px]"></i>
                                     </a>
-                                    @endif
+                                    </template>
                                 </div>
                             </div>
                         </td>
                         <td class="px-8 py-6 text-right">
-                            <div class="text-sm font-black text-slate-800">Rp {{ number_format($c->bill_amount, 0, ',', '.') }}</div>
+                            <div class="text-sm font-black text-slate-800" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(c.bill_amount)"></div>
                             <div class="flex items-center justify-end gap-1.5 mt-1 border-t border-slate-50 pt-1">
                                 <span class="text-[9px] font-black text-slate-400 uppercase">Paid:</span>
-                                <span class="text-[10px] font-black text-emerald-600">Rp {{ number_format($c->paid_amount, 0, ',', '.') }}</span>
+                                <span class="text-[10px] font-black text-emerald-600" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(c.paid_amount || 0)"></span>
                             </div>
                         </td>
                         <td class="px-8 py-6">
@@ -144,20 +163,20 @@
                                      <i class="fas fa-microchip"></i>
                                  </div>
                                  <div class="space-y-0.5">
-                                     <div class="text-[11px] font-black text-slate-700 uppercase leading-none">{{ $c->device_name ?: 'Unknown Engine' }}</div>
-                                     <div class="text-[10px] font-mono font-bold text-slate-400 tracking-tight">{{ $c->device_ip ?: '0.0.0.0' }}</div>
+                                     <div class="text-[11px] font-black text-slate-700 uppercase leading-none" x-text="c.device_name || 'Unknown Engine'"></div>
+                                     <div class="text-[10px] font-mono font-bold text-slate-400 tracking-tight" x-text="c.device_ip || '0.0.0.0'"></div>
                                  </div>
                              </div>
                         </td>
                         <td class="px-8 py-6">
                             <div class="flex items-center justify-center gap-1.5">
-                                <button @click="openModal({{ json_encode($c) }}, true)" class="p-2.5 bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white rounded-xl transition shadow-sm" title="View Details">
+                                <button @click="openModal(c, true)" class="p-2.5 bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white rounded-xl transition shadow-sm" title="View Details">
                                     <i class="fas fa-eye text-sm"></i>
                                 </button>
-                                <button @click="openModal({{ json_encode($c) }})" class="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition shadow-sm" title="Edit Customer">
+                                <button @click="openModal(c)" class="p-2.5 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition shadow-sm" title="Edit Customer">
                                     <i class="fas fa-edit text-sm"></i>
                                 </button>
-                                <a :href="'{{ route('customer.delete', ['id' => 'PLACEHOLDER']) }}'.replace('PLACEHOLDER', {{ $c->id }})" 
+                                <a :href="'{{ route('customer.delete', ['id' => 'PLACEHOLDER']) }}'.replace('PLACEHOLDER', c.id)" 
                                    onclick="return confirm('Hapus pelanggan ini?')"
                                    class="p-2.5 bg-rose-50 text-rose-500 hover:bg-rose-600 hover:text-white rounded-xl transition shadow-sm" title="Delete Account">
                                     <i class="fas fa-trash-alt text-sm"></i>
@@ -165,7 +184,9 @@
                             </div>
                         </td>
                     </tr>
-                    @empty
+                    </template>
+
+                    <template x-if="customers.length === 0">
                     <tr>
                         <td colspan="5" class="px-10 py-20 text-center">
                             <div class="flex flex-col items-center">
@@ -177,10 +198,15 @@
                             </div>
                         </td>
                     </tr>
-                    @endforelse
+                    </template>
                 </tbody>
             </table>
         </div>
+        @if($customers->hasPages())
+        <div class="px-8 py-4 bg-slate-50/50 border-t border-slate-100">
+            {{ $customers->appends(request()->query())->links() }}
+        </div>
+        @endif
     </div>
 
     <!-- Modal -->

@@ -169,7 +169,7 @@ class BillingController extends Controller
     public function income() {
         // Use Income model for manual entries only
         $incomes = Income::orderBy('date', 'desc')
-            ->get();
+            ->paginate(20);
             
         // Summary Calculations
         $today = Carbon::today();
@@ -284,7 +284,7 @@ class BillingController extends Controller
     // Expenses
     // Expenses
     public function expenses() {
-        $expenses = Expense::with('debt')->orderBy('date', 'desc')->get();
+        $expenses = Expense::with('debt')->orderBy('date', 'desc')->paginate(20);
         
         // Summary Calculations
         $today = Carbon::today();
@@ -365,7 +365,7 @@ class BillingController extends Controller
 
     // Debts
     public function debts() {
-        $debts = Debt::orderBy('date', 'desc')->get();
+        $debts = Debt::orderBy('date', 'desc')->paginate(20);
         
         // Summary Calculations
         $totalDebt = Debt::sum('amount');
