@@ -59,24 +59,30 @@
 
     <!-- Quick Actions -->
     <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Menu Reseller</h3>
-    <div class="grid grid-cols-3 gap-4">
-        <a href="{{ route('customer_app.reseller.vouchers') }}" class="aspect-square bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-3 group active:scale-95 transition-all">
-            <div class="w-12 h-12 bg-blue-50 text-blue-500 rounded-2xl flex items-center justify-center text-xl group-hover:bg-blue-600 group-hover:text-white transition-all">
-                <i class="fas fa-ticket-alt"></i>
+    <div class="grid grid-cols-4 gap-3">
+        <a href="{{ route('customer_app.reseller.vouchers') }}" class="aspect-square bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-2 group active:scale-95 transition-all">
+            <div class="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center text-lg group-hover:bg-blue-600 group-hover:text-white transition-all">
+                <i class="fas fa-magic"></i>
             </div>
-            <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest">Voucher</span>
+            <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest">Voucher</span>
         </a>
-        <a href="{{ route('customer_app.reseller.balance_logs') }}" class="aspect-square bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-3 group active:scale-95 transition-all text-center">
-            <div class="w-12 h-12 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center text-xl group-hover:bg-orange-600 group-hover:text-white transition-all">
+        <a href="{{ route('customer_app.reseller.topup') }}" class="aspect-square bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-2 group active:scale-95 transition-all text-center">
+            <div class="w-10 h-10 bg-green-50 text-green-500 rounded-xl flex items-center justify-center text-lg group-hover:bg-green-600 group-hover:text-white transition-all">
+                <i class="fas fa-plus-circle"></i>
+            </div>
+            <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest px-1">Isi Saldo</span>
+        </a>
+        <a href="{{ route('customer_app.reseller.balance_logs') }}" class="aspect-square bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-2 group active:scale-95 transition-all text-center">
+            <div class="w-10 h-10 bg-orange-50 text-orange-500 rounded-xl flex items-center justify-center text-lg group-hover:bg-orange-600 group-hover:text-white transition-all">
                 <i class="fas fa-wallet"></i>
             </div>
-            <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest px-1">Saldo</span>
+            <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest px-1">Riwayat</span>
         </a>
-        <a href="{{ route('customer_app.reseller.distribution') }}" class="aspect-square bg-white rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-3 group active:scale-95 transition-all text-center">
-            <div class="w-12 h-12 bg-purple-50 text-purple-500 rounded-2xl flex items-center justify-center text-xl group-hover:bg-purple-600 group-hover:text-white transition-all">
+        <a href="{{ route('customer_app.reseller.distribution') }}" class="aspect-square bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-2 group active:scale-95 transition-all text-center">
+            <div class="w-10 h-10 bg-purple-50 text-purple-500 rounded-xl flex items-center justify-center text-lg group-hover:bg-purple-600 group-hover:text-white transition-all">
                 <i class="fas fa-history"></i>
             </div>
-            <span class="text-[9px] font-black text-slate-600 uppercase tracking-widest px-1">Distribusi</span>
+            <span class="text-[8px] font-black text-slate-600 uppercase tracking-widest px-1">Distribusi</span>
         </a>
     </div>
 

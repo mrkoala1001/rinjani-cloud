@@ -61,7 +61,52 @@ Route::domain('www.depootcom.com')->group(function () {
 // HOTPOT.DEPOOTCOM.COM - APPLICATION (HOTPOT)
 // --------------------------------------------------------------------------
 Route::domain('hotpot.depootcom.com')->group(function () {
+    
+    // PWA Manifest for Owner
+    Route::get('/manifest-owner.json', function() {
+        return response()->json([
+            "name" => "HOT POT Manager",
+            "short_name" => "HotPot",
+            "description" => "Panel Manajemen Hotspot (Owner)",
+            "start_url" => "/dashboard",
+            "scope" => "/", 
+            "display" => "standalone",
+            "background_color" => "#4f46e5",
+            "theme_color" => "#4f46e5",
+            "orientation" => "portrait",
+            "icons" => [
+                [
+                    "src" => "/img/icon-512.png",
+                    "sizes" => "512x512",
+                    "type" => "image/png",
+                    "purpose" => "any maskable"
+                ]
+            ]
+        ]);
+    });
 
+    // PWA Manifest for Reseller
+    Route::get('/manifest-reseller.json', function() {
+        return response()->json([
+            "name" => "HOT POT Reseller",
+            "short_name" => "Reseller App",
+            "description" => "Aplikasi Reseller Hotspot",
+            "start_url" => "/app/dashboard",
+            "scope" => "/app/",
+            "display" => "standalone",
+            "background_color" => "#4f46e5",
+            "theme_color" => "#4f46e5",
+            "orientation" => "portrait",
+            "icons" => [
+                [
+                    "src" => "/img/icon-512.png",
+                    "sizes" => "512x512",
+                    "type" => "image/png",
+                    "purpose" => "any maskable"
+                ]
+            ]
+        ]);
+    });
     // Public Landing Page (Old/Legacy if needed)
     Route::get('/', [\App\Http\Controllers\LandingController::class, 'index'])->name('landing');
     Route::get('/dokumentasi', [\App\Http\Controllers\LandingController::class, 'documentation'])->name('documentation.index');
@@ -297,6 +342,7 @@ Route::prefix('app')->group(function () {
         Route::get('/profile', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'profile'])->name('customer_app.reseller.profile');
         Route::post('/profile', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'updateProfile'])->name('customer_app.reseller.profile.update');
         Route::get('/balance-history', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'balanceLogs'])->name('customer_app.reseller.balance_logs');
+        Route::get('/topup', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'topup'])->name('customer_app.reseller.topup');
     });
 });
 

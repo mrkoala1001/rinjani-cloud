@@ -368,6 +368,13 @@ class DashboardController extends Controller
         return view('customer_app.reseller.balance_logs', compact('customer', 'logs'));
     }
 
+    public function topup()
+    {
+        $customerId = session('customer_id');
+        $customer = CustomerMember::findOrFail($customerId);
+        return view('customer_app.reseller.topup', compact('customer'));
+    }
+
     protected function pppoeDashboard($customer)
     {
         return view('customer_app.dashboards.pppoe', compact('customer'));
