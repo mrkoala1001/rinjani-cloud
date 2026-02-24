@@ -40,7 +40,9 @@
         device_name: '',
         device_ip: '',
         device_username: '',
-        device_password: ''
+        device_password: '',
+        app_username: '',
+        app_password: ''
     },
     openModal(data = null, viewOnly = false) {
         this.viewMode = viewOnly;
@@ -61,7 +63,9 @@
                 device_name: '',
                 device_ip: '',
                 device_username: '',
-                device_password: ''
+                device_password: '',
+                app_username: '',
+                app_password: ''
             };
         }
         this.showModal = true;
@@ -326,6 +330,22 @@
                                             <div>
                                                 <label class="block text-slate-400 text-[9px] font-black uppercase mb-1">Pass Alat</label>
                                                 <input type="text" name="device_password" x-model="formData.device_password" :disabled="viewMode" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 disabled:bg-slate-100/50">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-indigo-50/50 rounded-2xl p-5 border border-indigo-100 space-y-4">
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <i class="fas fa-mobile-alt text-indigo-400 text-xs"></i>
+                                            <span class="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Akses Aplikasi</span>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="block text-slate-400 text-[9px] font-black uppercase mb-1">Username App</label>
+                                                <input type="text" name="app_username" x-model="formData.app_username" :disabled="viewMode" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 disabled:bg-slate-100/50">
+                                            </div>
+                                            <div>
+                                                <label class="block text-slate-400 text-[9px] font-black uppercase mb-1">Password App</label>
+                                                <input type="text" name="app_password" x-model="formData.app_password" :disabled="viewMode" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-800 focus:outline-none focus:border-indigo-500 disabled:bg-slate-100/50">
                                             </div>
                                         </div>
                                     </div>

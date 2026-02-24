@@ -66,6 +66,7 @@ class ResellerController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users',
+            'email' => 'nullable|email|max:255|unique:users',
             'password' => 'required|string|min:4',
             'location' => 'nullable|string',
             'whatsapp' => 'nullable|string',
@@ -74,7 +75,7 @@ class ResellerController extends Controller
         $resellerUser = User::create([
             'name' => $request->name,
             'username' => $request->username,
-            'email' => $request->username . '@reseller.local',
+            'email' => $request->email,
             'password' => bcrypt($request->password),
             'role' => 'reseller',
             'created_by' => auth()->id(),
@@ -144,24 +145,28 @@ class ResellerController extends Controller
     }
 
     /**
-     * OWNER FEATURE: Manage balance for resellers
+     * OWNER FEATURE: Manage balance for resellers (using CustomerMember table)
      */
     public function manageBalance()
     {
-        $resellerUsers = User::where('role', 'reseller')
-            ->where('created_by', auth()->id())
-            ->get();
-            
-        // Make sure all have profile
-        foreach($resellerUsers as $ru) {
-            ResellerModel::firstOrCreate(
-                ['user_id' => $ru->id],
-                ['name' => $ru->name, 'balance' => 0]
-            );
-        }
+        $ownerId = auth()->id();
+        
+        // All resellers for the dropdown
+        $allResellers = \App\Models\CustomerMember::where('user_id', $ownerId)
+            ->where('type', 'RESELLER')
+            ->orderBy('name')
+            ->get(['id', 'name', 'balance']);
 
-        $resellers = ResellerModel::whereIn('user_id', $resellerUsers->pluck('id'))->get();
-        return view('owner.reseller.balance', compact('resellers'));
+        // Paginated resellers for the table
+        $resellers = \App\Models\CustomerMember::where('user_id', $ownerId)
+            ->where('type', 'RESELLER')
+            ->orderBy('name')
+            ->paginate(6);
+            
+        return view('owner.reseller.balance', [
+            'resellers' => $resellers,
+            'allResellers' => $allResellers
+        ]);
     }
 
     public function addBalance(Request $request)
@@ -171,18 +176,29 @@ class ResellerController extends Controller
             'amount' => 'required|numeric|min:100',
         ]);
 
-        $reseller = ResellerModel::findOrFail($request->reseller_id);
-        
-        // Verify ownership
-        $user = User::findOrFail($reseller->user_id);
-        if ($user->created_by !== auth()->id()) {
-            abort(403);
-        }
+        $reseller = \App\Models\CustomerMember::where('user_id', auth()->id())
+            ->where('type', 'RESELLER')
+            ->findOrFail($request->reseller_id);
+            
+        $before = $reseller->balance;
+        $amount = (float)$request->amount;
 
-        $reseller->balance += $request->amount;
-        $reseller->save();
+        // Use Eloquent increment
+        $reseller->increment('balance', $amount);
 
-        return back()->with('success', 'Saldo berhasil ditambahkan ke ' . $reseller->name);
+        // Record History
+        \App\Models\BalanceHistory::create([
+            'user_id' => auth()->id(),
+            'customer_id' => $reseller->id,
+            'type' => 'IN',
+            'amount' => $amount,
+            'before_balance' => $before,
+            'after_balance' => $before + $amount,
+            'description' => 'Topup Saldo oleh Owner',
+            'reference_id' => 'TOPUP-' . now()->format('YmdHis'),
+        ]);
+
+        return back()->with('success', 'Berhasil! Saldo ' . $reseller->name . ' ditambahkan sebesar Rp ' . number_format($amount));
     }
 
     /**

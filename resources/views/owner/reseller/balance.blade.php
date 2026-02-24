@@ -37,7 +37,7 @@
                         <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Pilih Reseller</label>
                         <select name="reseller_id" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-bold text-slate-700 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all outline-none" required>
                             <option value="">-- Pilih Reseller --</option>
-                            @foreach($resellers as $reseller)
+                            @foreach($allResellers as $reseller)
                                 <option value="{{ $reseller->id }}">{{ $reseller->name }} (Saldo: Rp {{ number_format($reseller->balance, 0, ',', '.') }})</option>
                             @endforeach
                         </select>
@@ -66,7 +66,7 @@
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="p-6 border-b border-slate-100 flex items-center justify-between">
                 <h3 class="text-sm font-black text-slate-800 uppercase tracking-wider">Ringkasan Saldo Reseller</h3>
-                <span class="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black text-slate-500 uppercase tracking-widest">{{ count($resellers) }} Reseller</span>
+                <span class="px-3 py-1 bg-slate-100 rounded-full text-[10px] font-black text-slate-500 uppercase tracking-widest">{{ $resellers->total() }} Reseller</span>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -101,6 +101,12 @@
                     </tbody>
                 </table>
             </div>
+
+            @if($resellers->hasPages())
+            <div class="p-6 border-t border-slate-50">
+                {{ $resellers->links() }}
+            </div>
+            @endif
         </div>
     </div>
 </div>

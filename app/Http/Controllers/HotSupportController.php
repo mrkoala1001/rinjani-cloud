@@ -203,6 +203,7 @@ class HotSupportController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users',
+            'email' => 'nullable|email|max:255|unique:users',
             'password' => 'required|string|min:4',
             'location' => 'nullable|string',
             'whatsapp' => 'nullable|string',
@@ -212,7 +213,7 @@ class HotSupportController extends Controller
         User::create([
             'name' => $request->name,
             'username' => $request->username,
-            'email' => $request->username . '@hotsupport.local', // Fallback email
+            'email' => $request->email,
             'password' => bcrypt($request->password),
             'role' => 'owner',
             'created_by' => auth()->id(), // Ownership tracking

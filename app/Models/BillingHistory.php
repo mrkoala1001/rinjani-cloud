@@ -48,4 +48,12 @@ class BillingHistory extends Model
         'payment_status',
         'paid_at'
     ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'generated_at' => 'datetime',
+        'first_login_at' => 'datetime',
+        'paid_at' => 'datetime',
+    ];
 }

@@ -53,10 +53,20 @@
                         </div>
 
                         <div>
-                            <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Alamat Email</label>
+                            <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Username Login</label>
+                            <div class="relative">
+                                <i class="fas fa-user-circle absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                <input type="text" name="username" value="{{ old('username', $user->username) }}" required
+                                    class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition duration-300 text-slate-700 font-bold">
+                            </div>
+                            @error('username') <p class="text-rose-500 text-[10px] mt-1 font-bold">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Alamat Email (Opsional)</label>
                             <div class="relative">
                                 <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-                                <input type="email" name="email" value="{{ old('email', $user->email) }}" required
+                                <input type="email" name="email" value="{{ old('email', $user->email) }}"
                                     class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition duration-300 text-slate-700 font-bold">
                             </div>
                             @error('email') <p class="text-rose-500 text-[10px] mt-1 font-bold">{{ $message }}</p> @enderror

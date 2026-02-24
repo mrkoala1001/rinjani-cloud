@@ -10,6 +10,24 @@
     <style>
         [x-cloak] { display: none !important; }
     </style>
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Apple Mobile Web App Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="HotPot Manager">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/916/916771.png">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(reg => console.log('SW Registered', reg))
+                    .catch(err => console.log('SW Error', err));
+            });
+        }
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         .sidebar-scroll::-webkit-scrollbar {
@@ -79,24 +97,7 @@
                         <span class="font-medium">Dashboard</span>
                     </a>
 
-                    <!-- Reseller Management Menu -->
-                    <div x-data="{ open: {{ request()->routeIs('owner.reseller.*') ? 'true' : 'false' }} }" class="space-y-1">
-                        <button @click="open = !open" class="w-full flex items-center justify-between py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('owner.reseller.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white' }}">
-                            <div class="flex items-center">
-                                <i class="fas fa-user-tag mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
-                                <span class="font-medium">Manajemen Reseller</span>
-                            </div>
-                            <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
-                        </button>
-                        <div x-show="open" x-cloak x-transition.origin.top.duration.200ms class="space-y-1 pl-11 pr-2">
-                            <a href="{{ route('owner.reseller.index') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('owner.reseller.index') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
-                                Daftar Reseller
-                            </a>
-                            <a href="{{ route('owner.reseller.balance') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('owner.reseller.balance') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
-                                Tambah Saldo
-                            </a>
-                        </div>
-                    </div>
+
 
                     <a href="{{ route('report.form') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('report.form') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                         <i class="fas fa-paper-plane mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
@@ -133,6 +134,9 @@
                             </a>
                             <a href="{{ route('voucher.templates') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('voucher.templates') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                                 Templates
+                            </a>
+                            <a href="{{ route('owner.reseller.balance') }}" class="block py-2 px-3 rounded-md text-sm font-bold border-t border-slate-700/50 mt-1 pt-2 transition duration-200 hover:bg-slate-700 {{ request()->routeIs('owner.reseller.balance') ? 'bg-orange-600 text-white shadow-md' : 'text-orange-400 hover:text-white' }}">
+                                <i class="fas fa-wallet mr-1"></i> Manage Saldo
                             </a>
                         </div>
                     </div>

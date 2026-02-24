@@ -92,7 +92,8 @@ class BuilderController extends Controller
         
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,'.$user->id,
+            'username' => 'required|string|max:255|unique:users,username,'.$user->id,
+            'email' => 'nullable|string|email|max:255|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8',
             'is_active' => 'required|boolean',
             'origin' => 'required|in:hotpot,blog,p3pot,semua',
@@ -100,6 +101,7 @@ class BuilderController extends Controller
 
         $data = [
             'name' => $request->name,
+            'username' => $request->username,
             'email' => $request->email,
             'is_active' => $request->is_active,
             'origin' => $request->origin,
@@ -187,7 +189,8 @@ class BuilderController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
+            'username' => 'required|string|max:255|unique:users',
+            'email' => 'nullable|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
             'role' => 'required|in:isp,builder,owner',
             'location' => 'nullable|string|max:255',
@@ -197,6 +200,7 @@ class BuilderController extends Controller
 
         User::create([
             'name' => $request->name,
+            'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,

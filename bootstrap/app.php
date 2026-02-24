@@ -12,11 +12,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+        ]);
         $middleware->web(prepend: [
             \App\Http\Middleware\OriginAccessMiddleware::class,
         ]);
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'customer_app' => \App\Http\Middleware\CustomerApp\AuthenticateCustomerApp::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -26,8 +26,11 @@ class CustomerMember extends Model
         'coordinates',
         'bill_amount',
         'paid_amount', // Not in form, but in DB
+        'balance',
         'payment_date',
         'notes',
+        'app_username',
+        'app_password',
         'password',
         'device_name',
         'device_ip',

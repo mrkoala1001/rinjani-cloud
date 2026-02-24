@@ -50,6 +50,14 @@
                     id="location" type="text" name="location" placeholder="Contoh: Jl. Merdeka No. 10">
             </div>
 
+            <div class="space-y-2">
+                <label class="block text-slate-700 text-sm font-black uppercase tracking-wider" for="email">
+                    Email (Opsional)
+                </label>
+                <input class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all outline-none text-slate-700 font-medium" 
+                    id="email" type="email" name="email" placeholder="email@reseller.com">
+            </div>
+
             <div class="space-y-2 md:col-span-2">
                 <label class="block text-slate-700 text-sm font-black uppercase tracking-wider" for="whatsapp">
                     WhatsApp (Opsional)

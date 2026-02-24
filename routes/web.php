@@ -274,6 +274,32 @@ Route::domain('hotpot.depootcom.com')->group(function () {
     });
 });
 
+// --------------------------------------------------------------------------
+// CUSTOMER APP ROUTES (FOR CLIENT LOGIN)
+// --------------------------------------------------------------------------
+Route::prefix('app')->group(function () {
+    Route::get('/login', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'showLogin'])->name('customer_app.login');
+    Route::post('/login', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'login'])->name('customer_app.login.post');
+    Route::post('/logout', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'logout'])->name('customer_app.logout');
+    Route::get('/logout', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'logout']);
+
+    Route::middleware('customer_app')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'index'])->name('customer_app.dashboard');
+        
+        // Reseller Special Routes
+        Route::get('/vouchers', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'vouchers'])->name('customer_app.reseller.vouchers');
+        Route::post('/vouchers/generate', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'generateVoucher'])->name('customer_app.reseller.generate');
+        Route::get('/distribution', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'distribution'])->name('customer_app.reseller.distribution');
+        Route::get('/distribution/batch/{batchId}', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'viewBatch'])->name('customer_app.reseller.batch.view');
+        Route::delete('/distribution/batch/{batchId}', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'deleteBatch'])->name('customer_app.reseller.batch.delete');
+        Route::get('/active-users', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'activeUsers'])->name('customer_app.reseller.active');
+        Route::get('/transactions', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'transactions'])->name('customer_app.reseller.transactions');
+        Route::get('/profile', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'profile'])->name('customer_app.reseller.profile');
+        Route::post('/profile', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'updateProfile'])->name('customer_app.reseller.profile.update');
+        Route::get('/balance-history', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'balanceLogs'])->name('customer_app.reseller.balance_logs');
+    });
+});
+
 Route::domain('www.hotpot.depootcom.com')->group(function () {
     Route::get('/{any?}', function($any = '') { 
         return redirect('http://hotpot.depootcom.com/' . $any); 
@@ -321,6 +347,13 @@ Route::domain('p3pot.depootcom.com')->group(function () {
 // TELEGRAM BOT WEBHOOK
 // --------------------------------------------------------------------------
 Route::post('/telegram/webhook', [\App\Http\Controllers\TelegramBotController::class, 'handleWebhook'])->name('telegram.webhook');
+
+// --------------------------------------------------------------------------
+// API ROUTES FOR CUSTOMER APP
+// --------------------------------------------------------------------------
+Route::prefix('api/customer')->group(function () {
+    Route::post('/login', [\App\Http\Controllers\Api\CustomerAuthController::class, 'login']);
+});
 
 // --------------------------------------------------------------------------
 // FALLBACK ROUTE - Handle IP access or unknown domains

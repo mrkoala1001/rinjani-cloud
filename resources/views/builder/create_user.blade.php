@@ -31,8 +31,14 @@
                     @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Email (Login)</label>
-                    <input type="email" name="email" required value="{{ old('email') }}" 
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Username (Login)</label>
+                    <input type="text" name="username" required value="{{ old('username') }}" 
+                           class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                    @error('username') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Email (Opsional)</label>
+                    <input type="email" name="email" value="{{ old('email') }}" 
                            class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                     @error('email') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
