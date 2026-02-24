@@ -361,11 +361,16 @@ class DashboardController extends Controller
         $customerId = session('customer_id');
         $customer = CustomerMember::findOrFail($customerId);
         
+        $pendingTopups = \App\Models\Topup::where('customer_id', $customerId)
+            ->where('status', 'PENDING')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         $logs = \App\Models\BalanceHistory::where('customer_id', $customerId)
             ->orderBy('created_at', 'desc')
             ->paginate(15);
             
-        return view('customer_app.reseller.balance_logs', compact('customer', 'logs'));
+        return view('customer_app.reseller.balance_logs', compact('customer', 'logs', 'pendingTopups'));
     }
 
     public function topup()

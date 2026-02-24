@@ -342,9 +342,14 @@ Route::prefix('app')->group(function () {
         Route::get('/profile', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'profile'])->name('customer_app.reseller.profile');
         Route::post('/profile', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'updateProfile'])->name('customer_app.reseller.profile.update');
         Route::get('/balance-history', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'balanceLogs'])->name('customer_app.reseller.balance_logs');
-        Route::get('/topup', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'topup'])->name('customer_app.reseller.topup');
+        Route::get('/topup', [\App\Http\Controllers\CustomerApp\TopupController::class, 'index'])->name('customer_app.reseller.topup');
+        Route::post('/topup', [\App\Http\Controllers\CustomerApp\TopupController::class, 'store'])->name('customer_app.reseller.topup.store');
+        Route::get('/topup/finish', [\App\Http\Controllers\CustomerApp\TopupController::class, 'finish'])->name('customer_app.reseller.topup.finish');
     });
 });
+
+// Pakasir Callback (Must be outside auth and excluded from CSRF)
+Route::post('/pakasir/callback', [\App\Http\Controllers\CustomerApp\TopupController::class, 'callback'])->name('pakasir.callback');
 
 Route::domain('www.hotpot.depootcom.com')->group(function () {
     Route::get('/{any?}', function($any = '') { 

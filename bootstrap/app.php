@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->validateCsrfTokens(except: [
             'api/*',
+            'pakasir/callback',
         ]);
         $middleware->web(prepend: [
             \App\Http\Middleware\OriginAccessMiddleware::class,
