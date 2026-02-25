@@ -5,9 +5,23 @@
 
 @section('content')
 <div class="max-w-7xl mx-auto">
-    <!-- Month Info -->
-    <div class="mb-6">
-        <h2 class="text-xl font-bold text-gray-700">Periode: {{ date('F Y') }}</h2>
+    <!-- Month Info & Actions -->
+    <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h2 class="text-xl font-bold text-gray-700">Periode Berjalan: {{ date('F Y') }}</h2>
+        
+        <form action="{{ route('billing.monitor.exportPdf') }}" method="GET" class="w-full md:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white p-3 rounded-xl shadow-sm border border-slate-200">
+            <div class="flex items-center gap-2 flex-1 sm:flex-none">
+                <span class="text-xs font-bold text-slate-500 w-16 md:w-auto text-left">DARI:</span>
+                <input type="date" name="start_date" value="{{ date('Y-m-01') }}" required class="w-full sm:w-36 bg-slate-50 border-slate-200 rounded-lg text-xs focus:ring-blue-500 focus:border-blue-500 py-2 px-3">
+            </div>
+            <div class="flex items-center gap-2 flex-1 sm:flex-none">
+                <span class="text-xs font-bold text-slate-500 w-16 md:w-auto text-left">S/D:</span>
+                <input type="date" name="end_date" value="{{ date('Y-m-t') }}" required class="w-full sm:w-36 bg-slate-50 border-slate-200 rounded-lg text-xs focus:ring-blue-500 focus:border-blue-500 py-2 px-3">
+            </div>
+            <button type="submit" class="w-full sm:w-auto mt-2 sm:mt-0 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition flex items-center justify-center whitespace-nowrap">
+                <i class="fas fa-file-pdf mr-2 text-lg"></i> Cetak PDF
+            </button>
+        </form>
     </div>
 
     <!-- Summary Cards -->

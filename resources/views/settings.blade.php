@@ -90,6 +90,24 @@
                                    placeholder="********">
                             <p class="text-xs text-gray-500 mt-1">Password untuk user tersebut</p>
                         </div>
+
+                        <div class="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
+                             <div class="flex items-center">
+                                <div class="flex items-center h-5">
+                                    <input id="use_radius" name="use_radius" type="checkbox" value="1" {{ ($config->use_radius ?? false) ? 'checked' : '' }}
+                                           class="focus:ring-blue-500 h-5 w-5 text-blue-600 border-gray-300 rounded cursor-pointer">
+                                </div>
+                                <div class="ml-3 text-sm">
+                                    <label for="use_radius" class="font-bold text-blue-800 cursor-pointer flex items-center">
+                                        <i class="fas fa-broadcast-tower mr-2"></i> Aktifkan Mode RADIUS (Optimasi MikroTik)
+                                    </label>
+                                    <p class="text-blue-600 text-xs mt-1">
+                                        Rekomendasi jika user sudah di atas 500. MikroTik akan mengambil data dari server secara realtime tanpa menyimpan user di router. 
+                                        <strong>Pastikan server ini sudah terinstall FreeRADIUS.</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex items-center justify-between mt-8 pt-6 border-t">

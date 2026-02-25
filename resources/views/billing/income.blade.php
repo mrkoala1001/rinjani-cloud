@@ -129,6 +129,62 @@
         </div>
     </div>
 
+    <!-- Filter Bar -->
+    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6 flex flex-col xl:flex-row gap-6 justify-between items-start xl:items-end">
+        <!-- Date Filter Form -->
+        <form action="{{ route('billing.income') }}" method="GET" class="flex flex-col sm:flex-row gap-4 items-end w-full xl:w-auto flex-grow">
+            <!-- pertahankan pencarian (search) jika ada -->
+            <input type="hidden" name="search" value="{{ $search ?? '' }}">
+            <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                <div class="w-full sm:w-40 md:w-48">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">DARI TANGGAL</label>
+                    <input type="date" name="start_date" value="{{ $startDate ?? '' }}" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-green-500 focus:border-green-500">
+                </div>
+                <div class="w-full sm:w-40 md:w-48">
+                    <label class="block text-xs font-bold text-slate-500 mb-1">SAMPAI TANGGAL</label>
+                    <input type="date" name="end_date" value="{{ $endDate ?? '' }}" class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-green-500 focus:border-green-500">
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2 w-full sm:w-auto">
+                <button type="submit" class="flex-1 sm:flex-none justify-center bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition shadow-sm flex items-center">
+                    <i class="fas fa-filter mr-2"></i> Filter
+                </button>
+                @if(!empty($startDate) && !empty($endDate))
+                <a href="{{ route('billing.income.export', ['start_date' => $startDate, 'end_date' => $endDate, 'search' => $search ?? '']) }}" class="flex-1 sm:flex-none justify-center bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition shadow-sm whitespace-nowrap flex items-center">
+                    <i class="fas fa-file-excel mr-2"></i> Export
+                </a>
+                @endif
+                @if(!empty($startDate) || !empty($endDate))
+                <a href="{{ route('billing.income', ['search' => $search ?? '']) }}" class="flex-1 sm:flex-none justify-center bg-slate-100 text-slate-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 transition flex items-center">
+                    Reset
+                </a>
+                @endif
+            </div>
+        </form>
+
+        <!-- Search Form -->
+        <form action="{{ route('billing.income') }}" method="GET" class="flex gap-2 items-end w-full xl:w-auto pt-2 border-t border-slate-100 xl:border-t-0 xl:pt-0">
+            <!-- pertahankan filter tanggal jika ada -->
+            <input type="hidden" name="start_date" value="{{ $startDate ?? '' }}">
+            <input type="hidden" name="end_date" value="{{ $endDate ?? '' }}">
+            
+            <div class="w-full sm:w-64 flex-grow">
+                <label class="block text-xs font-bold text-slate-500 mb-1">CARI DATA</label>
+                <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Ketik kata kunci..." class="w-full bg-slate-50 border-slate-200 rounded-lg text-sm focus:ring-green-500 focus:border-green-500">
+            </div>
+            <div class="flex gap-2 shrink-0">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-700 transition shadow-sm flex items-center justify-center h-[38px] w-[46px]" title="Cari">
+                    <i class="fas fa-search"></i>
+                </button>
+                @if(!empty($search))
+                <a href="{{ route('billing.income', ['start_date' => $startDate ?? '', 'end_date' => $endDate ?? '']) }}" class="bg-slate-100 text-slate-600 px-3 py-2 rounded-lg text-sm font-bold hover:bg-slate-200 transition flex items-center justify-center h-[38px] w-[46px]" title="Hapus Pencarian">
+                    <i class="fas fa-times"></i>
+                </a>
+                @endif
+            </div>
+        </form>
+    </div>
+
     <!-- Action Bar -->
     <div class="mb-6 flex justify-end">
         <button @click="showModal = true" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow transition flex items-center">

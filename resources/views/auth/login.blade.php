@@ -30,8 +30,18 @@
             <form method="POST" action="{{ route('login.post') }}" class="space-y-6">
                 @csrf
                 
+                @if (session('error'))
+                    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg text-sm mb-4">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fas fa-exclamation-triangle font-bold"></i>
+                            <span class="font-bold">Opps!</span>
+                        </div>
+                        <p class="opacity-90">{{ session('error') }}</p>
+                    </div>
+                @endif
+
                 @if ($errors->any())
-                    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg text-sm animate-pulse">
+                    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg text-sm animate-pulse mb-4">
                         <div class="flex items-center gap-2 mb-1">
                             <i class="fas fa-exclamation-circle font-bold"></i>
                             <span class="font-bold">Login Failed</span>
@@ -85,5 +95,19 @@
             &copy; 2026 HOT POT Manager. Built with <i class="fas fa-heart text-red-400"></i> by DEPOOTCOM.
         </div>
     </div>
+
+    <script>
+        // PWA Fix: Reload if loaded from browser cache (back button or PWA resume)
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                window.location.reload();
+            }
+        });
+
+        // Auto force-refresh page every 110 minutes to prevent CSRF timeout (Default expires in 120m)
+        setTimeout(function() {
+            window.location.reload();
+        }, 110 * 60 * 1000);
+    </script>
 </body>
 </html>

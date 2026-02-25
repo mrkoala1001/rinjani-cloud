@@ -13,7 +13,7 @@ class MikrotikConfig extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'host', 'user', 'pass', 'port', 'user_id'
+        'host', 'user', 'pass', 'port', 'user_id', 'use_radius'
     ];
 
     public function user()

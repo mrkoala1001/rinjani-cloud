@@ -23,6 +23,7 @@ class TenantScope implements Scope
             if ($model instanceof \App\Models\VoucherTemplate) {
                 $builder->where(function ($query) use ($table) {
                     $query->where($table . '.user_id', auth()->id())
+                          ->orWhereNull($table . '.user_id')
                           ->orWhere($table . '.is_system', true);
                 });
             } else {

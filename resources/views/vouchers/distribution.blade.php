@@ -58,12 +58,11 @@
                         </td>
                         <td class="py-3 px-6 text-center">
                             <div class="flex items-center justify-center space-x-2">
-                                <a href="{{ route('voucher.printBatch', $batch->batch_id) }}" 
-                                   target="_blank"
+                                <button onclick="openPrintModal('{{ $batch->batch_id }}')" 
                                    class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs font-bold transition inline-flex items-center"
                                    title="Print">
                                     <i class="fas fa-print"></i>
-                                </a>
+                                </button>
                                 <a href="{{ route('voucher.viewBatch', $batch->batch_id) }}" 
                                    class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold transition inline-flex items-center"
                                    title="Lihat Detail">
@@ -201,7 +200,48 @@
     </div>
 </div>
 
+<!-- Modal Print -->
+<div id="printModal" class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 overflow-hidden">
+        <form id="printForm" action="" method="GET" target="_blank">
+            <div class="p-4 border-b bg-gray-50">
+                <h3 class="font-black text-gray-800"><i class="fas fa-print mr-2 text-yellow-500"></i>Pilih Template Print</h3>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-xs text-gray-500 uppercase tracking-widest font-bold">Batch: <br><span id="printBatchIdCode" class="font-mono text-gray-700 font-black mt-1 inline-block bg-gray-100 px-2 py-1 rounded"></span></p>
+                <div>
+                    <label class="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">Gunakan Format</label>
+                    <select name="template_id" required class="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:outline-none focus:border-indigo-500 bg-white">
+                        <option value="" disabled selected>-- Pilih Template --</option>
+                        @foreach($templates as $tpl)
+                        <option value="{{ $tpl->id }}">{{ $tpl->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div class="p-4 border-t flex justify-end gap-3 bg-gray-50">
+                <button type="button" onclick="closePrintModal()" class="px-5 py-2.5 rounded-xl text-gray-600 text-xs font-black uppercase tracking-widest hover:bg-gray-200 transition">Batal</button>
+                <button type="submit" onclick="closePrintModal()" class="px-5 py-2.5 bg-yellow-500 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-yellow-600 select-none shadow-md shadow-yellow-500/30 transition">Lanjut Print</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+function openPrintModal(batchId) {
+    document.getElementById('printModal').classList.remove('hidden');
+    document.getElementById('printBatchIdCode').textContent = batchId;
+    document.getElementById('printForm').action = '/hotsupport/voucher/print/' + batchId; // Update dynamically if prefix changed
+    
+    // Auto replace prefix according to base url
+    let baseUrl = "{{ url('/') }}";
+    // Usually routes are scoped, so let's just use named route dynamically? Non-trivial via js
+    document.getElementById('printForm').action = `{{ url('/') }}/voucher/print/${batchId}`;
+}
+function closePrintModal() {
+    document.getElementById('printModal').classList.add('hidden');
+}
+
 // Reseller filter
 document.getElementById('resellerFilter').addEventListener('change', function() {
     const selectedResellerId = this.value;

@@ -11,7 +11,7 @@ class HotSupportController extends Controller
     public function index()
     {
         // Global Stats
-        $totalOwners = User::where('role', 'owner')->where('created_by', auth()->id())->count();
+        $totalOwners = User::whereIn('role', ['owner', 'mitra', 'mitra-reseller'])->where('created_by', auth()->id())->count();
         $totalRouters = MikrotikConfig::whereIn('user_id', function($query) {
             $query->select('id')->from('users')->where('created_by', auth()->id());
         })->count();
@@ -37,7 +37,7 @@ class HotSupportController extends Controller
             ->sum('amount') ?? 0;
         
         // List of Owners with Detailed Stats
-        $owners = User::where('role', 'owner')
+        $owners = User::whereIn('role', ['owner', 'mitra', 'mitra-reseller'])
             ->where('created_by', auth()->id())
             ->with(['mikrotikConfigs'])
             ->withSum(['billingHistories as total_vouchers_created' => function($query) {
@@ -208,6 +208,7 @@ class HotSupportController extends Controller
             'location' => 'nullable|string',
             'whatsapp' => 'nullable|string',
             'notes' => 'nullable|string',
+            'role' => 'required|in:mitra,mitra-reseller',
         ]);
 
         User::create([
@@ -215,7 +216,7 @@ class HotSupportController extends Controller
             'username' => $request->username,
             'email' => $request->email,
             'password' => bcrypt($request->password),
-            'role' => 'owner',
+            'role' => $request->role,
             'created_by' => auth()->id(), // Ownership tracking
             'location' => $request->location,
             'whatsapp' => $request->whatsapp,
@@ -243,6 +244,7 @@ class HotSupportController extends Controller
             'whatsapp' => 'nullable|string',
             'notes' => 'nullable|string',
             'password' => 'nullable|string|min:4',
+            'role' => 'required|in:owner,mitra,mitra-reseller',
         ]);
 
         $owner->name = $request->name;
@@ -250,6 +252,7 @@ class HotSupportController extends Controller
         $owner->location = $request->location;
         $owner->whatsapp = $request->whatsapp;
         $owner->notes = $request->notes;
+        $owner->role = $request->role;
 
         if ($request->filled('password')) {
             $owner->password = bcrypt($request->password);
@@ -320,7 +323,7 @@ class HotSupportController extends Controller
 
     public function destroyOwner($id)
     {
-        $user = User::where('role', 'owner')->where('created_by', auth()->id())->findOrFail($id);
+        $user = User::whereIn('role', ['owner', 'mitra', 'mitra-reseller'])->where('created_by', auth()->id())->findOrFail($id);
 
         \DB::transaction(function () use ($user) {
             $userId = $user->id;
@@ -348,5 +351,240 @@ class HotSupportController extends Controller
         });
 
         return redirect()->route('hotsupport.dashboard')->with('success', 'Akun Mitra dan seluruh datanya telah berhasil dihapus secara permanen.');
+    }
+
+    // --- Mitra Reseller Management ---
+
+    public function manageMitraResellerBalance()
+    {
+        $resellers = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->paginate(10);
+        foreach ($resellers as $reseller) {
+            $profile = \App\Models\Reseller::where('user_id', $reseller->id)->first();
+            $reseller->balance = $profile ? $profile->balance : 0;
+        }
+        return view('hotsupport.mitra_reseller.balance', compact('resellers'));
+    }
+
+    public function addMitraResellerBalance(Request $request)
+    {
+        $request->validate([
+            'reseller_id' => 'required',
+            'amount' => 'required|numeric|min:100',
+        ]);
+        
+        $user = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->findOrFail($request->reseller_id);
+        
+        $profile = \App\Models\Reseller::where('user_id', $user->id)->first();
+        if (!$profile) {
+            $profile = \App\Models\Reseller::create(['user_id' => $user->id, 'name' => $user->name, 'balance' => 0]);
+        }
+        
+        $before = $profile->balance;
+        $profile->increment('balance', $request->amount);
+
+        // Record History
+        \App\Models\BalanceHistory::create([
+            'user_id' => auth()->id(),
+            'customer_id' => $user->id,
+            'type' => 'IN',
+            'amount' => $request->amount,
+            'before_balance' => $before,
+            'after_balance' => $before + $request->amount,
+            'description' => 'Topup Saldo oleh ISP',
+            'reference_id' => 'TOPUP-ISP-' . now()->format('YmdHis'),
+        ]);
+        
+        return back()->with('success', 'Berhasil! Saldo ' . $user->name . ' ditambahkan sebesar Rp ' . number_format($request->amount, 0, ',', '.'));
+    }
+
+    public function manageMitraResellerProfiles()
+    {
+        $resellers = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->paginate(10);
+        return view('hotsupport.mitra_reseller.profiles_list', compact('resellers'));
+    }
+
+    public function viewMitraResellerProfiles($id)
+    {
+        $user = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->findOrFail($id);
+        
+        $mkConfig = \App\Models\MikrotikConfig::withoutGlobalScopes()->where('user_id', $user->id)->first();
+        $profiles = [];
+        
+        if ($mkConfig) {
+            try {
+                $client = new \RouterOS\Client([
+                    'host' => $mkConfig->host,
+                    'user' => $mkConfig->user,
+                    'pass' => $mkConfig->pass,
+                    'port' => (int)($mkConfig->port ?? 8728),
+                    'timeout' => 5,
+                ]);
+                $profiles = $client->query('/ip/hotspot/user/profile/print')->read();
+                
+                foreach ($profiles as &$prof) {
+                    $meta = \App\Models\HotspotProfileMetadata::withoutGlobalScopes()
+                                ->where('user_id', $user->id)
+                                ->where('profile_name', $prof['name'])->first();
+                    $prof['local_metadata'] = $meta;
+                }
+            } catch (\Exception $e) {
+                // Ignore mikrotik error or flash it
+                session()->flash('error', 'RouterOS Error: ' . $e->getMessage());
+            }
+        } else {
+            session()->flash('error', 'Mitra (Reseller) ini belum memiliki konfigurasi Router.');
+        }
+
+        return view('hotsupport.mitra_reseller.profiles_show', compact('user', 'profiles'));
+    }
+
+    public function storeMitraResellerProfile(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required',
+            'shared_users' => 'required|integer',
+        ]);
+        
+        $user = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->findOrFail($id);
+        $mkConfig = \App\Models\MikrotikConfig::withoutGlobalScopes()->where('user_id', $user->id)->first();
+        
+        if (!$mkConfig) return back()->with('error', 'Konfigurasi MikroTik tidak ditemukan untuk mitra ini.');
+        
+        try {
+            $client = new \RouterOS\Client([
+                'host' => $mkConfig->host,
+                'user' => $mkConfig->user,
+                'pass' => $mkConfig->pass,
+                'port' => (int)($mkConfig->port ?? 8728)
+            ]);
+            $query = new \RouterOS\Query('/ip/hotspot/user/profile/add');
+            $query->add('=name=' . $request->name);
+            $query->add('=shared-users=' . $request->shared_users);
+            
+            if ($request->rate_limit) $query->add('=rate-limit=' . $request->rate_limit);
+            if ($request->validity) $query->add('=session-timeout=' . $request->validity);
+            
+            try {
+                $client->query($query)->read();
+            } catch (\Exception $e) {
+                if (!str_contains($e->getMessage(), 'Undefined array key')) throw $e;
+            }
+            
+            \App\Models\HotspotProfileMetadata::withoutGlobalScopes()->updateOrCreate(
+                ['user_id' => $user->id, 'profile_name' => $request->name],
+                [
+                    'price' => $request->price ?? 0,
+                    'selling_price' => $request->sell_price ?? 0,
+                    'validity' => $request->validity ?? '1d'
+                ]
+            );
+            
+            return back()->with('success', 'Profile berhasil ditambahkan untuk ' . $user->name);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menambahkan profile: ' . $e->getMessage());
+        }
+    }
+
+    public function updateMitraResellerProfile(Request $request, $id) 
+    {
+        $request->validate([
+            'mk_id' => 'required',
+            'name' => 'required',
+            'shared_users' => 'required|integer',
+        ]);
+        
+        $user = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->findOrFail($id);
+        $mkConfig = \App\Models\MikrotikConfig::withoutGlobalScopes()->where('user_id', $user->id)->first();
+        
+        if (!$mkConfig) return back()->with('error', 'Konfigurasi MikroTik tidak ditemukan.');
+        
+        try {
+            $client = new \RouterOS\Client([
+                'host' => $mkConfig->host,
+                'user' => $mkConfig->user,
+                'pass' => $mkConfig->pass,
+                'port' => (int)($mkConfig->port ?? 8728)
+            ]);
+            $query = new \RouterOS\Query('/ip/hotspot/user/profile/set');
+            $query->add('=.id=' . $request->mk_id);
+            $query->add('=shared-users=' . $request->shared_users);
+            
+            if ($request->rate_limit) $query->add('=rate-limit=' . $request->rate_limit);
+            if ($request->validity) $query->add('=session-timeout=' . $request->validity);
+            
+            try {
+                $client->query($query)->read();
+            } catch (\Exception $e) {
+                if (!str_contains($e->getMessage(), 'Undefined array key')) throw $e;
+            }
+            
+            \App\Models\HotspotProfileMetadata::withoutGlobalScopes()->updateOrCreate(
+                ['user_id' => $user->id, 'profile_name' => $request->name],
+                [
+                    'price' => $request->price ?? 0,
+                    'selling_price' => $request->sell_price ?? 0,
+                    'validity' => $request->validity ?? '1d'
+                ]
+            );
+            
+            return back()->with('success', 'Profile berhasil diupdate.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mengupdate profile: ' . $e->getMessage());
+        }
+    }
+
+    public function deleteMitraResellerProfile(Request $request, $id)
+    {
+        $mk_id = $request->query('mk_id');
+        $name = $request->query('name');
+        
+        $user = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->findOrFail($id);
+        $mkConfig = \App\Models\MikrotikConfig::withoutGlobalScopes()->where('user_id', $user->id)->first();
+        
+        if (!$mkConfig) return back()->with('error', 'Konfigurasi MikroTik tidak ditemukan.');
+        
+        try {
+            $client = new \RouterOS\Client([
+                'host' => $mkConfig->host,
+                'user' => $mkConfig->user,
+                'pass' => $mkConfig->pass,
+                'port' => (int)($mkConfig->port ?? 8728)
+            ]);
+            $query = new \RouterOS\Query('/ip/hotspot/user/profile/remove');
+            $query->add('=.id=' . $mk_id);
+            
+            try {
+                $client->query($query)->read();
+            } catch (\Exception $e) {
+                if (!str_contains($e->getMessage(), 'Undefined array key')) throw $e;
+            }
+            
+            if ($name) {
+                \App\Models\HotspotProfileMetadata::withoutGlobalScopes()
+                    ->where('user_id', $user->id)
+                    ->where('profile_name', $name)->delete();
+            }
+            
+            return back()->with('success', 'Profile berhasil dihapus.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menghapus profile: ' . $e->getMessage());
+        }
+    }
+
+    public function mitraResellerBalanceHistory(Request $request)
+    {
+        $managedUserIds = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->pluck('id');
+        
+        $query = \App\Models\BalanceHistory::whereIn('customer_id', $managedUserIds)->with('customer');
+        
+        if ($request->filled('reseller_id')) {
+            $query->where('customer_id', $request->reseller_id);
+        }
+        
+        $history = $query->latest()->paginate(15);
+        $resellers = User::whereIn('id', $managedUserIds)->get();
+        $resellerMap = $resellers->keyBy('id');
+        
+        return view('hotsupport.mitra_reseller.balance_history', compact('history', 'resellers', 'resellerMap'));
     }
 }

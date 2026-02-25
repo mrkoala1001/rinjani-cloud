@@ -154,6 +154,11 @@ class DashboardController extends Controller
             $vouchers = [];
             $batchId = 'APP-' . now()->format('YmdHis');
 
+            $templateId = \App\Models\VoucherTemplate::where('user_id', $customer->user_id)->orderBy('id')->value('id');
+            if (!$templateId) {
+                $templateId = \App\Models\VoucherTemplate::orderBy('id')->value('id');
+            }
+
             for ($i = 0; $i < $qty; $i++) {
                 $code = strtoupper(substr(md5(uniqid()), 0, 6));
                 $pass = $code;
@@ -182,6 +187,8 @@ class DashboardController extends Controller
                     'selling_price' => $meta->selling_price,
                     'timelimit' => $timeLimit ?: $meta->timelimit,
                     'validity' => $meta->validity,
+                    'template_id' => $templateId,
+                    'hotspotname' => $customer->name,
                     'batch_id' => $batchId,
                     'payment_status' => 'paid', // Status lunas karena potong saldo
                     'generated_at' => now(),

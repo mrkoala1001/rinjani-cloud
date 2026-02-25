@@ -26,12 +26,7 @@
                         </div>
                     @endif
 
-                    <!-- Hotspot Name -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Hotspot Name</label>
-                        <input type="text" name="hotspotname" placeholder="e.g. HOTSPOT DEEPNET" value="{{ old('hotspotname') }}" 
-                               class="w-full border rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                    </div>
+
 
                     <!-- Quantity -->
                     <div>

@@ -15,6 +15,7 @@ use App\Models\MikrotikConfig;
 use App\Models\HotspotProfileMetadata;
 use RouterOS\Client;
 use RouterOS\Query;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 
 class BillingController extends Controller
@@ -165,11 +166,64 @@ class BillingController extends Controller
             'income_voucher', 'income_member', 'income_reseller'
         ));
     }
+    
+    public function exportMonitorPdf(Request $request) {
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        
+        if (!$startDate || !$endDate) {
+            return redirect()->back()->with('error', 'Pilih rentang tanggal terlebih dahulu.');
+        }
 
-    public function income() {
-        // Use Income model for manual entries only
-        $incomes = Income::orderBy('date', 'desc')
-            ->paginate(20);
+        // Fetch Incomes
+        $incomes = Income::whereBetween('date', [$startDate, $endDate])->orderBy('date', 'asc')->get();
+        $totalIncome = $incomes->sum('amount');
+
+        // Fetch Expenses
+        $expenses = Expense::with('debt')->whereBetween('date', [$startDate, $endDate])->orderBy('date', 'asc')->get();
+        $totalExpense = $expenses->sum('amount');
+
+        // Fetch Debts active during period (or all active debts for simple summary)
+        $debts = Debt::orderBy('date', 'asc')->get();
+        $totalDebt = $debts->sum('amount');
+        
+        $totalPaidDebt = Expense::where('category', 'Bayar Hutang')->sum('amount');
+        
+        $profit = $totalIncome - $totalExpense;
+
+        $pdf = Pdf::loadView('billing.pdf_report', compact(
+            'startDate', 'endDate', 
+            'incomes', 'totalIncome', 
+            'expenses', 'totalExpense', 
+            'debts', 'totalDebt', 'totalPaidDebt',
+            'profit'
+        ));
+        
+        $pdf->setPaper('A4', 'portrait');
+
+        return $pdf->download("Laporan_Keuangan_Hotpot_{$startDate}_sampai_{$endDate}.pdf");
+    }
+
+    public function income(Request $request) {
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        $search = $request->get('search');
+        
+        $query = Income::query();
+        
+        if ($startDate && $endDate) {
+            $query->whereBetween('date', [$startDate, $endDate]);
+        }
+        
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('customer_name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('category', 'like', "%{$search}%");
+            });
+        }
+        
+        $incomes = $query->orderBy('date', 'desc')->paginate(20);
             
         // Summary Calculations
         $today = Carbon::today();
@@ -195,8 +249,68 @@ class BillingController extends Controller
             'customers',
             'summaryToday',
             'summaryMonth',
-            'summaryTotal'
+            'summaryTotal',
+            'startDate',
+            'endDate',
+            'search'
         ));
+    }
+    
+    public function exportIncome(Request $request) {
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        $search = $request->get('search');
+        
+        if (!$startDate || !$endDate) {
+            return redirect()->back()->with('error', 'Silakan pilih rentang tanggal.');
+        }
+        
+        $query = Income::whereBetween('date', [$startDate, $endDate]);
+            
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('customer_name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('category', 'like', "%{$search}%");
+            });
+        }
+        
+        $incomes = $query->orderBy('date', 'asc')->get();
+        
+        $filename = "rekap_pemasukan_" . $startDate . "_to_" . $endDate . ".csv";
+        
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+        
+        $columns = ['Tanggal', 'Kategori', 'Pelanggan', 'Keterangan', 'Metode', 'Jumlah (Rp)'];
+        
+        $callback = function() use($incomes, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            
+            $total = 0;
+            foreach ($incomes as $inc) {
+                fputcsv($file, [
+                    $inc->date,
+                    $inc->category,
+                    $inc->customer_name,
+                    $inc->description,
+                    $inc->payment_method,
+                    $inc->amount
+                ]);
+                $total += $inc->amount;
+            }
+            
+            fputcsv($file, ['', '', '', '', 'TOTAL', $total]);
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
     }
     
     public function storeIncome(Request $request) {
@@ -283,8 +397,25 @@ class BillingController extends Controller
 
     // Expenses
     // Expenses
-    public function expenses() {
-        $expenses = Expense::with('debt')->orderBy('date', 'desc')->paginate(20);
+    public function expenses(Request $request) {
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        $search = $request->get('search');
+        
+        $query = Expense::with('debt');
+        
+        if ($startDate && $endDate) {
+            $query->whereBetween('date', [$startDate, $endDate]);
+        }
+        
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhere('category', 'like', "%{$search}%");
+            });
+        }
+        
+        $expenses = $query->orderBy('date', 'desc')->paginate(20);
         
         // Summary Calculations
         $today = Carbon::today();
@@ -310,8 +441,66 @@ class BillingController extends Controller
             'debts',
             'summaryToday',
             'summaryMonth',
-            'summaryTotal'
+            'summaryTotal',
+            'startDate',
+            'endDate',
+            'search'
         ));
+    }
+
+    public function exportExpense(Request $request) {
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        $search = $request->get('search');
+        
+        if (!$startDate || !$endDate) {
+            return redirect()->back()->with('error', 'Silakan pilih rentang tanggal.');
+        }
+        
+        $query = Expense::with('debt')->whereBetween('date', [$startDate, $endDate]);
+            
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%")
+                  ->orWhere('category', 'like', "%{$search}%");
+            });
+        }
+        
+        $expenses = $query->orderBy('date', 'asc')->get();
+        
+        $filename = "rekap_pengeluaran_" . $startDate . "_to_" . $endDate . ".csv";
+        
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+        
+        $columns = ['Tanggal', 'Kategori', 'Keterangan', 'Hutang Terkait', 'Jumlah (Rp)'];
+        
+        $callback = function() use($expenses, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            
+            $total = 0;
+            foreach ($expenses as $inc) {
+                fputcsv($file, [
+                    $inc->date,
+                    $inc->category,
+                    $inc->description,
+                    $inc->debt ? $inc->debt->description : '-',
+                    $inc->amount
+                ]);
+                $total += $inc->amount;
+            }
+            
+            fputcsv($file, ['', '', '', 'TOTAL', $total]);
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
     }
 
     public function storeExpense(Request $request) {
@@ -364,8 +553,24 @@ class BillingController extends Controller
     }
 
     // Debts
-    public function debts() {
-        $debts = Debt::orderBy('date', 'desc')->paginate(20);
+    public function debts(Request $request) {
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        $search = $request->get('search');
+        
+        $query = Debt::query();
+        
+        if ($startDate && $endDate) {
+            $query->whereBetween('date', [$startDate, $endDate]);
+        }
+        
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%");
+            });
+        }
+        
+        $debts = $query->orderBy('date', 'desc')->paginate(20);
         
         // Summary Calculations
         $totalDebt = Debt::sum('amount');
@@ -378,8 +583,63 @@ class BillingController extends Controller
             'debts',
             'totalDebt',
             'countDebt',
-            'totalPaid'
+            'totalPaid',
+            'startDate',
+            'endDate',
+            'search'
         ));
+    }
+
+    public function exportDebt(Request $request) {
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        $search = $request->get('search');
+        
+        if (!$startDate || !$endDate) {
+            return redirect()->back()->with('error', 'Silakan pilih rentang tanggal.');
+        }
+        
+        $query = Debt::whereBetween('date', [$startDate, $endDate]);
+            
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('description', 'like', "%{$search}%");
+            });
+        }
+        
+        $debts = $query->orderBy('date', 'asc')->get();
+        
+        $filename = "rekap_hutang_" . $startDate . "_to_" . $endDate . ".csv";
+        
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+        
+        $columns = ['Tanggal', 'Keterangan Hutang', 'Sisa Jumlah (Rp)'];
+        
+        $callback = function() use($debts, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            
+            $total = 0;
+            foreach ($debts as $inc) {
+                fputcsv($file, [
+                    $inc->date,
+                    $inc->description,
+                    $inc->amount
+                ]);
+                $total += $inc->amount;
+            }
+            
+            fputcsv($file, ['', 'TOTAL SISA HUTANG', $total]);
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
     }
 
     public function storeDebt(Request $request) {

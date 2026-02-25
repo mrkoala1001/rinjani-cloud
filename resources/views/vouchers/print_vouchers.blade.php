@@ -43,9 +43,11 @@
             justify-content: center;
             gap: 10px;
             margin: 20px 0;
-            /* Apply scaling */
-            transform: scale(var(--print-scale));
-            transform-origin: top center;
+            /* Apply scaling and layout reflow to adjust to paper size */
+            zoom: var(--print-scale);
+            /* Fallback for browsers that do not support zoom */
+            -moz-transform: scale(var(--print-scale));
+            -moz-transform-origin: top left;
         }
         
         .voucher-card {
@@ -197,23 +199,56 @@
                         '{{timelimit}}' => !empty($voucher->timelimit) ? $voucher->timelimit : '-',
                         '{{datalimit}}' => !empty($voucher->validity) ? $voucher->validity : '-', // Instruction: replace datalimit with validity
                         '{{hotspotname}}' => !empty($voucher->hotspotname) ? $voucher->hotspotname : 'HOTSPOT',
+                        '{{cs_number}}' => auth()->user()->whatsapp ?? auth()->user()->phone ?? '0817200386',
                     ];
                     
                     $html = str_replace(array_keys($replacements), array_values($replacements), $template->html_content);
                 @endphp
                 {!! $html !!}
             @else
-                {{-- Default voucher card --}}
-                <div class="voucher-card">
-                    <div class="voucher-username">{{ $voucher->username }}</div>
-                    <div class="voucher-password">{{ $voucher->password }}</div>
-                    @php
-                        $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://hotspot.mikhmon/login?username={$voucher->username}&password={$voucher->password}";
-                    @endphp
-                    <img src="{{ $qrUrl }}" class="qrcode" alt="QR Code">
-                    <div class="voucher-info">
-                        {{ $voucher->profile }}<br>
-                        Rp {{ number_format($voucher->price, 0, ',', '.') }}
+                {{-- Default voucher card - Professional --}}
+                <div class="voucher-card" style="width:260px; border-radius:12px; border:2px solid #cbd5e1; overflow:hidden; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align:left; padding:0; background:#fff; position:relative; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+                    <!-- Header -->
+                    <div style="background:#0f172a; color:white; padding:12px 10px; text-align:center;">
+                        <div style="font-size:16px; font-weight:900; letter-spacing:1px; text-transform:uppercase; text-shadow:1px 1px 2px rgba(0,0,0,0.5);">{{ !empty($voucher->hotspotname) ? $voucher->hotspotname : (auth()->user()->name ?? 'HOTSPOT') }}</div>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div style="padding:15px; display:flex; gap:12px; align-items:center;">
+                        @php
+                            $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=".urlencode("http://hotspot.mikhmon/login?username={$voucher->username}&password={$voucher->password}");
+                        @endphp
+                        <img src="{{ $qrUrl }}" style="width:75px; height:75px; border-radius:6px; border:1px solid #e2e8f0; padding:2px; background:#fff;">
+                        <div style="flex:1;">
+                            <div style="font-size:9px; color:#64748b; text-transform:uppercase; font-weight:bold; letter-spacing:0.5px;">Kode Login / Username</div>
+                            <div style="font-size:18px; font-weight:900; color:#0f172a; letter-spacing:1px; line-height:1.2;">{{ $voucher->username }}</div>
+                            
+                            <div style="font-size:9px; color:#64748b; margin-top:6px; text-transform:uppercase; font-weight:bold; letter-spacing:0.5px;">Password</div>
+                            <div style="font-size:14px; font-weight:bold; color:#334155; line-height:1.2;">{{ $voucher->password }}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Details Box -->
+                    <div style="padding:10px 15px; background:#f8fafc; border-top:1px dashed #cbd5e1; border-bottom:1px dashed #cbd5e1; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:13px; font-weight:900; color:#ef4444;">Rp {{ number_format($voucher->selling_price ?? $voucher->price, 0, ',', '.') }}</div>
+                            <div style="font-size:10px; font-weight:bold; color:#334155; margin-top:2px;">{{ $voucher->profile }}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:10px; color:#475569;"><span style="font-weight:bold;">Aktif:</span> {{ !empty($voucher->validity) ? $voucher->validity : '-' }}</div>
+                            <div style="font-size:10px; color:#475569; margin-top:2px;"><span style="font-weight:bold;">Waktu:</span> {{ !empty($voucher->timelimit) ? $voucher->timelimit : 'Unlim' }}</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div style="padding:12px 15px; text-align:center; background:#fff;">
+                        <div style="font-size:11px; color:#1e293b; font-weight:bold; margin-bottom:5px;">
+                            Login Link: <span style="color:#2563eb;">hotspot.mikhmon</span>
+                        </div>
+                        <div style="font-size:9px; color:#94a3b8; font-weight:600;">
+                            Dicetak/Reseller: <span style="color:#64748b;">{{ $batchInfo->reseller_name ?? 'Admin' }}</span><br>
+                            Komplain/CS: <span style="color:#64748b;">{{ auth()->user()->whatsapp ?? auth()->user()->phone ?? '0817200386' }}</span>
+                        </div>
                     </div>
                 </div>
             @endif

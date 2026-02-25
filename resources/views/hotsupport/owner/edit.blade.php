@@ -14,6 +14,17 @@
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="role">
+                    Role
+                </label>
+                <select class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="role" name="role" required>
+                    <option value="owner" {{ $owner->role == 'owner' ? 'selected' : '' }}>Owner</option>
+                    <option value="mitra" {{ $owner->role == 'mitra' ? 'selected' : '' }}>Mitra</option>
+                    <option value="mitra-reseller" {{ $owner->role == 'mitra-reseller' ? 'selected' : '' }}>Mitra-Reseller</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
                 <label class="block text-gray-700 text-sm font-bold mb-2" for="name">
                     Nama Perusahaan / Mitra
                 </label>

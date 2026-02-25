@@ -90,8 +90,30 @@
                         <span class="font-medium">Curhat Ke Developer</span>
                     </a>
 
-                @elseif(auth()->check() && auth()->user()->role === 'owner')
-                    <!-- Owner Menu -->
+                    <!-- Mitra Reseller Menu -->
+                    <div x-data="{ open: {{ request()->routeIs('hotsupport.mitra-reseller.*') ? 'true' : 'false' }} }" class="space-y-1">
+                        <button @click="open = !open" class="w-full flex items-center justify-between py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('hotsupport.mitra-reseller.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white' }}">
+                            <div class="flex items-center">
+                                <i class="fas fa-users-cog mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                                <span class="font-medium">Mitra Reseller</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="open" x-cloak x-transition.origin.top.duration.200ms class="space-y-1 pl-11 pr-2">
+                            <a href="{{ route('hotsupport.mitra-reseller.balance') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('hotsupport.mitra-reseller.balance') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                                Manage Saldo
+                            </a>
+                            <a href="{{ route('hotsupport.mitra-reseller.balance.history') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('hotsupport.mitra-reseller.balance.history') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                                Riwayat Saldo
+                            </a>
+                            <a href="{{ route('hotsupport.mitra-reseller.profiles') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('hotsupport.mitra-reseller.profiles') || request()->routeIs('hotsupport.mitra-reseller.profiles.*') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                                Manage Profile
+                            </a>
+                        </div>
+                    </div>
+
+                @elseif(auth()->check() && in_array(auth()->user()->role, ['owner', 'mitra', 'mitra-reseller']))
+                    <!-- Owner / Mitra Menu -->
                     <a href="{{ route('dashboard') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('dashboard') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                         <i class="fas fa-tachometer-alt mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
                         <span class="font-medium">Dashboard</span>
@@ -117,15 +139,19 @@
                             <a href="{{ route('voucher.generate') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('voucher.generate') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                                 Generate Voucher
                             </a>
+                            @if(auth()->user()->role !== 'mitra-reseller')
                             <a href="{{ route('voucher.list') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('voucher.list') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                                 Daftar Voucher
                             </a>
+                            @endif
                             <a href="{{ route('voucher.distribution') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('voucher.distribution') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                                 Distribusi
                             </a>
+                            @if(auth()->user()->role !== 'mitra-reseller')
                             <a href="{{ route('voucher.profiles') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('voucher.profiles') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                                 Profil & Sync
                             </a>
+                            @endif
                             <a href="{{ route('voucher.online') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('voucher.online') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                                 Online Users
                             </a>
@@ -136,7 +162,7 @@
                                 Templates
                             </a>
                             <a href="{{ route('owner.reseller.balance') }}" class="block py-2 px-3 rounded-md text-sm font-bold border-t border-slate-700/50 mt-1 pt-2 transition duration-200 hover:bg-slate-700 {{ request()->routeIs('owner.reseller.balance') ? 'bg-orange-600 text-white shadow-md' : 'text-orange-400 hover:text-white' }}">
-                                <i class="fas fa-wallet mr-1"></i> Manage Saldo
+                                <i class="fas fa-wallet mr-1"></i> {{ auth()->user()->role === 'mitra-reseller' ? 'Isi Saldo' : 'Manage Saldo' }}
                             </a>
                         </div>
                     </div>
@@ -436,17 +462,17 @@
                         </div>
                     </div>
                 
-                     <div class="flex items-center gap-3 pl-4 border-l border-slate-200">
+                     <a href="{{ route('profile') }}" class="flex items-center gap-3 pl-4 border-l border-slate-200 hover:bg-slate-50 transition p-2 rounded-lg cursor-pointer">
                         <div class="text-right hidden sm:block">
                             <div class="text-sm font-bold text-slate-700 leading-tight">{{ auth()->user()->name }}</div>
                             <div class="text-[10px] font-bold uppercase tracking-wide {{ auth()->user()->role === 'isp' ? 'text-blue-500' : (auth()->user()->role === 'builder' ? 'text-indigo-600' : (auth()->user()->role === 'reseller' ? 'text-green-500' : 'text-slate-500')) }}">
                                 {{ auth()->user()->role === 'isp' ? 'SUPERDUPER ADMIN' : (auth()->user()->role === 'builder' ? 'BUILDER' : (auth()->user()->role === 'reseller' ? 'RESELLER' : 'OWNER')) }}
                             </div>
                         </div>
-                        <div class="h-10 w-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-white">
+                        <div class="h-10 w-10 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md ring-2 ring-white hover:scale-105 transition-transform">
                             {{ substr(auth()->user()->name, 0, 1) }}
                         </div>
-                     </div>
+                     </a>
                 </div>
             </header>
 

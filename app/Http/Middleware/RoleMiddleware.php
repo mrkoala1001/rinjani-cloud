@@ -15,7 +15,15 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, $role): Response
     {
-        if (! $request->user() || ($request->user()->role !== $role && $request->user()->role !== 'builder')) {
+        $userRole = $request->user() ? $request->user()->role : null;
+        $allowedRoles = [$role, 'builder'];
+        
+        if ($role === 'owner') {
+            $allowedRoles[] = 'mitra';
+            $allowedRoles[] = 'mitra-reseller';
+        }
+
+        if (! $userRole || !in_array($userRole, $allowedRoles)) {
             // Builder is God Mode, allow access to ANY role route (except maybe owner specific ones if needed, but for now allow)
             // Actually, if role is 'owner', builder shouldn't necessarily access it unless impersonating.
             // But if role is 'isp', builder should definitely access it.

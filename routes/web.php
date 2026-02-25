@@ -125,6 +125,10 @@ Route::domain('hotpot.depootcom.com')->group(function () {
     // Authenticated Routes
     Route::middleware('auth')->group(function () {
         
+        // Profile Account Route
+        Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
+        Route::post('/profile', [DashboardController::class, 'updateProfile'])->name('profile.update');
+        
         // ISP / HOT SUPPORT Routes
         Route::middleware('role:isp')->prefix('hotsupport')->name('hotsupport.')->group(function () {
              Route::get('/', [HotSupportController::class, 'index'])->name('dashboard');
@@ -144,6 +148,16 @@ Route::domain('hotpot.depootcom.com')->group(function () {
              Route::get('/router/{id}/edit', [HotSupportController::class, 'editRouter'])->name('router.edit');
              Route::put('/router/{id}', [HotSupportController::class, 'updateRouter'])->name('router.update');
              Route::delete('/router/{id}', [HotSupportController::class, 'destroyRouter'])->name('router.destroy');
+
+             // Mitra-Reseller specific management
+             Route::get('/mitra-reseller/balance', [HotSupportController::class, 'manageMitraResellerBalance'])->name('mitra-reseller.balance');
+             Route::get('/mitra-reseller/balance/history', [HotSupportController::class, 'mitraResellerBalanceHistory'])->name('mitra-reseller.balance.history');
+             Route::post('/mitra-reseller/balance', [HotSupportController::class, 'addMitraResellerBalance'])->name('mitra-reseller.addBalance');
+             Route::get('/mitra-reseller/profiles', [HotSupportController::class, 'manageMitraResellerProfiles'])->name('mitra-reseller.profiles');
+             Route::get('/mitra-reseller/profiles/{id}', [HotSupportController::class, 'viewMitraResellerProfiles'])->name('mitra-reseller.profiles.show');
+             Route::post('/mitra-reseller/profiles/{id}', [HotSupportController::class, 'storeMitraResellerProfile'])->name('mitra-reseller.profiles.store');
+             Route::post('/mitra-reseller/profiles/{id}/update', [HotSupportController::class, 'updateMitraResellerProfile'])->name('mitra-reseller.profiles.update');
+             Route::get('/mitra-reseller/profiles/{id}/delete', [HotSupportController::class, 'deleteMitraResellerProfile'])->name('mitra-reseller.profiles.delete');
 
              // Report & Ticketing System
              Route::get('/tickets', [HotSupportController::class, 'ticketIndex'])->name('tickets.index');
@@ -227,7 +241,9 @@ Route::domain('hotpot.depootcom.com')->group(function () {
             Route::prefix('billing')->name('billing.')->group(function () {
                 Route::get('/', [BillingController::class, 'index'])->name('index');
                 Route::get('/monitor', [BillingController::class, 'monitor'])->name('monitor');
+                Route::get('/monitor/export-pdf', [BillingController::class, 'exportMonitorPdf'])->name('monitor.exportPdf');
                 Route::get('/income', [BillingController::class, 'income'])->name('income');
+                Route::get('/income/export', [BillingController::class, 'exportIncome'])->name('income.export');
                 Route::get('/income/sync', [BillingController::class, 'sync'])->name('syncIncome');
                 Route::post('/income', [BillingController::class, 'storeIncome'])->name('storeIncome');
                 Route::post('/income/update', [BillingController::class, 'updateIncome'])->name('updateIncome');
@@ -235,10 +251,12 @@ Route::domain('hotpot.depootcom.com')->group(function () {
                 Route::get('/income/print/{id}', [BillingController::class, 'printIncome'])->name('printIncome');
                 
                 Route::get('/expense', [BillingController::class, 'expenses'])->name('expense');
+                Route::get('/expense/export', [BillingController::class, 'exportExpense'])->name('expense.export');
                 Route::post('/expense', [BillingController::class, 'storeExpense'])->name('storeExpense');
                 Route::get('/expense/delete/{id}', [BillingController::class, 'deleteExpense'])->name('deleteExpense');
                 
                 Route::get('/debt', [BillingController::class, 'debts'])->name('debt');
+                Route::get('/debt/export', [BillingController::class, 'exportDebt'])->name('debt.export');
                 Route::post('/debt', [BillingController::class, 'storeDebt'])->name('storeDebt');
                 Route::get('/debt/delete/{id}', [BillingController::class, 'deleteDebt'])->name('deleteDebt');
             });

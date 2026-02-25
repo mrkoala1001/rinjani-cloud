@@ -63,14 +63,20 @@ class DashboardController extends Controller
         // 3. Calculation Logic
         // Voucher Realtime (Total Generated - All Time)
         $voucherRealtime = DB::table('billing_history as bh')
-            ->leftJoin('hotspot_profile_metadata as pm', 'bh.profile', '=', 'pm.profile_name')
+            ->leftJoin('hotspot_profile_metadata as pm', function($join) {
+                $join->on('bh.profile', '=', 'pm.profile_name')
+                     ->on('bh.user_id', '=', 'pm.user_id');
+            })
             ->where('bh.user_id', auth()->id())
             ->whereNull('bh.first_login_at')
             ->sum(DB::raw('COALESCE(pm.price, bh.price)'));
 
         // Voucher Terjual (Monthly Sync with Anchor Date)
         $totalVoucherSold = DB::table('billing_history as bh')
-            ->leftJoin('hotspot_profile_metadata as pm', 'bh.profile', '=', 'pm.profile_name')
+            ->leftJoin('hotspot_profile_metadata as pm', function($join) {
+                $join->on('bh.profile', '=', 'pm.profile_name')
+                     ->on('bh.user_id', '=', 'pm.user_id');
+            })
             ->where('bh.user_id', auth()->id())
             ->whereNotNull('bh.first_login_at')
             ->whereMonth('bh.first_login_at', $anchorDate->month)
@@ -101,6 +107,44 @@ class DashboardController extends Controller
             'routerResources',
             'routerTime'
         ));
+    }
+
+    public function profile()
+    {
+        $user = auth()->user();
+        return view('profile', compact('user'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $user = auth()->user();
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users,username,' . $user->id,
+            'email' => 'nullable|email|max:255',
+            'whatsapp' => 'nullable|string|max:20',
+            'location' => 'nullable|string|max:255',
+        ]);
+
+        $data = [
+            'name' => $request->name,
+            'username' => $request->username,
+            'email' => $request->email,
+            'whatsapp' => $request->whatsapp,
+            'location' => $request->location,
+        ];
+
+        if ($request->filled('password')) {
+            $request->validate([
+                'password' => 'string|min:6',
+            ]);
+            $data['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+        }
+
+        $user->update($data);
+
+        return redirect()->back()->with('success', 'Profile updated successfully.');
     }
 
     public function reportForm()

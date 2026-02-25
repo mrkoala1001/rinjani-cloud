@@ -114,8 +114,11 @@ class VoucherController extends Controller
         $dataLimit = $request->datalimit;
         $templateId = $request->template_id;
 
+        $mkConfig = MikrotikConfig::where('user_id', auth()->id())->first();
+        $useRadius = $mkConfig ? $mkConfig->use_radius : false;
+
         $client = $this->getClient();
-        if (!$client) {
+        if (!$client && !$useRadius) {
             return back()->withErrors(['connection' => 'Gagal terhubung ke MikroTik Router.'])->withInput();
         }
 
@@ -135,6 +138,15 @@ class VoucherController extends Controller
         $sellingPrice = $meta ? $meta->selling_price : $price;
         $dnsName = 'hotspot.mikhmon'; 
         $batchId = 'BATCH-' . now()->format('YmdHis') . '-' . strtoupper(substr(md5(uniqid()), 0, 6));
+
+        // Balance Check for mitra-reseller
+        if (auth()->user()->role === 'mitra-reseller') {
+            $totalCost = $price * $qty; // Reseller pays modal/price
+            $resellerProfile = \App\Models\Reseller::where('user_id', auth()->id())->first();
+            if (!$resellerProfile || $resellerProfile->balance < $totalCost) {
+                return back()->with('error', 'Saldo tidak mencukupi untuk generate ' . $qty . ' voucher. Saldo Anda: Rp ' . number_format($resellerProfile ? $resellerProfile->balance : 0) . ', Total Harga: Rp ' . number_format($totalCost) . '.')->withInput();
+            }
+        }
 
         $totalProcessed = 0;
         $chunkSize = 100; // Process 100 vouchers at a time
@@ -166,7 +178,7 @@ class VoucherController extends Controller
                     'price' => $price,
                     'selling_price' => $sellingPrice,
                     'validity' => $validity,
-                    'hotspotname' => $request->hotspotname ?? $dnsName,
+                    'hotspotname' => auth()->user()->name,
                     'timelimit' => $timeLimit,
                     'datalimit' => $dataLimit,
                     'reseller_id' => $resellerId,
@@ -179,20 +191,23 @@ class VoucherController extends Controller
             }
 
             try {
-                // 1. Send Chunk to MikroTik
-                $scriptName = "tmp_gen_" . time() . "_" . $i;
-                
-                try {
-                    $client->query('/system/script/add', ['name' => $scriptName, 'source' => $mkScriptChunk])->read();
-                    $client->query('/system/script/run', ['.id' => $scriptName])->read();
-                    $client->query('/system/script/remove', ['.id' => $scriptName])->read();
-                } catch (\Exception $e) {
-                    // Ignore technical warnings from library for successful empty responses
-                    $msg = $e->getMessage();
-                    if (!str_contains($msg, 'Undefined array key') && 
-                        !str_contains($msg, 'offset 0') && 
-                        !str_contains($msg, 'array key 0')) {
-                        throw $e;
+                // 1. Send Chunk to MikroTik (Skip if using RADIUS)
+                if (!$useRadius && $client) {
+                    foreach ($dbDataChunk as $u) {
+                        try {
+                            $cmd = new \RouterOS\Query('/ip/hotspot/user/add');
+                            $cmd->equal('server', $server);
+                            $cmd->equal('name', $u['username']);
+                            $cmd->equal('password', $u['password']);
+                            $cmd->equal('profile', $u['profile']);
+                            $cmd->equal('comment', $comment);
+                            if (!empty($u['timelimit'])) $cmd->equal('limit-uptime', $u['timelimit']);
+                            if (!empty($u['datalimit'])) $cmd->equal('limit-bytes-total', $u['datalimit']);
+                            
+                            $client->query($cmd)->read();
+                        } catch (\Exception $e) {
+                            \Log::error("Failed to add user to MikroTik", ['user' => $u['username'], 'error' => $e->getMessage()]);
+                        }
                     }
                 }
 
@@ -209,6 +224,26 @@ class VoucherController extends Controller
             }
         }
 
+        // Deduct balance for mitra-reseller
+        if (auth()->user()->role === 'mitra-reseller' && $totalProcessed > 0) {
+            $totalCostToDeduct = $price * $totalProcessed; // deduct modal
+            $resellerProfile = \App\Models\Reseller::where('user_id', auth()->id())->first();
+            if ($resellerProfile) {
+                $before = $resellerProfile->balance;
+                $resellerProfile->decrement('balance', $totalCostToDeduct);
+                \App\Models\BalanceHistory::create([
+                    'user_id' => auth()->id(),
+                    'customer_id' => auth()->id(),
+                    'type' => 'OUT',
+                    'amount' => $totalCostToDeduct,
+                    'before_balance' => $before,
+                    'after_balance' => $before - $totalCostToDeduct,
+                    'description' => "Bayar Generate $totalProcessed Voucher ($profileName)",
+                    'reference_id' => $batchId,
+                ]);
+            }
+        }
+
         return redirect()->route('voucher.distribution')
             ->with('success', "Voucher {$batchId} sejumlah {$totalProcessed} Berhasil di generate");
     }
@@ -217,19 +252,44 @@ class VoucherController extends Controller
     public function list()
     {
         $userId = auth()->id();
+        $mkConfig = \App\Models\MikrotikConfig::where('user_id', $userId)->first();
+        $useRadius = $mkConfig ? $mkConfig->use_radius : false;
+
         $cacheKey = "hotspot_users_{$userId}";
         
         // Caching selama 5 menit agar tidak terus-menerus nanya ke MikroTik
-        $data = \Cache::remember($cacheKey, 300, function() {
+        $data = \Cache::remember($cacheKey, 300, function() use ($useRadius, $userId) {
             $client = $this->getClient();
             $users = [];
             $profiles = [];
             
+            if ($useRadius) {
+                // Fetch from Local DB for RADIUS Mode
+                $dbUsers = \App\Models\BillingHistory::where('user_id', $userId)
+                    ->orderBy('id', 'desc')
+                    ->get();
+                
+                foreach ($dbUsers as $u) {
+                    $users[] = [
+                        '.id' => (string)$u->id,
+                        'name' => $u->username ?? $u->voucher_code,
+                        'password' => $u->password,
+                        'profile' => $u->profile,
+                        'limit-uptime' => $u->timelimit,
+                        'server' => $u->server ?? 'all',
+                        'comment' => $u->comment ?? ($u->batch_id ? "Batch: {$u->batch_id}" : "-"),
+                        'is_radius' => true
+                    ];
+                }
+            }
+
             if ($client) {
                 try {
-                    $users = $client->query('/ip/hotspot/user/print')->read();
+                    if (!$useRadius) {
+                        $users = $client->query('/ip/hotspot/user/print')->read();
+                    }
                     $profiles = $client->query('/ip/hotspot/user/profile/print')->read();
-                } catch (Exception $e) {
+                } catch (\Exception $e) {
                     \Log::error("RouterOS Error: " . $e->getMessage());
                 }
             }
@@ -250,6 +310,28 @@ class VoucherController extends Controller
             'password' => 'required',
             'profile' => 'required',
         ]);
+
+        $mkConfig = \App\Models\MikrotikConfig::where('user_id', auth()->id())->first();
+        $useRadius = $mkConfig ? $mkConfig->use_radius : false;
+
+        if ($useRadius) {
+            $voucher = \App\Models\BillingHistory::where('id', $request->id)
+                ->where('user_id', auth()->id())
+                ->first();
+            
+            if (!$voucher) return back()->with('error', 'Voucher tidak ditemukan di database.');
+            
+            $voucher->update([
+                'username' => $request->name,
+                'voucher_code' => $request->name,
+                'password' => $request->password,
+                'profile' => $request->profile,
+                'timelimit' => $request->limit_uptime,
+                'comment' => $request->comment
+            ]);
+            
+            return back()->with('success', 'User updated successfully (Mode RADIUS).');
+        }
 
         $client = $this->getClient();
         if (!$client) {
@@ -326,45 +408,74 @@ class VoucherController extends Controller
 
     public function delete($id)
     {
+        $mkConfig = MikrotikConfig::where('user_id', auth()->id())->first();
+        $useRadius = $mkConfig ? $mkConfig->use_radius : false;
+
+        if ($useRadius) {
+            // If using RADIUS, we only need to delete from local DB
+            // We need to find the username first if we only have the ID (though usually ID is for Mikrotik)
+            // Wait, in list() for RADIUS, we might not even have Mikrotik IDs.
+            // Let's assume for now delete from DB is enough if ID is handled.
+            // But wait, the $id passed here is usually Mikrotik's .id.
+            // If using RADIUS, the list might be different.
+        }
+
         $client = $this->getClient();
-        if (!$client) {
+        if (!$client && !$useRadius) {
             return back()->with('error', 'Gagal menghubungkan ke MikroTik. Pastikan router online.');
         }
 
         try {
-            // Fetch user first to get username for DB sync
-            // Use explicit query to avoid library issues with array params
-            $qPrint = new \RouterOS\Query('/ip/hotspot/user/print');
-            $qPrint->where('.id', $id);
-            $user = $client->query($qPrint)->read();
+            $username = null;
             
-            // If empty, user might already be gone or ID format mismatch
-            if (empty($user)) {
-                return back()->with('error', 'Voucher tidak ditemukan di MikroTik.');
-            }
-            
-            $username = $user[0]['name'] ?? null;
-
-            // Remove from MikroTik using explicit Query object
-            try {
-                $qRemove = new \RouterOS\Query('/ip/hotspot/user/remove');
-                $qRemove->add('=.id=' . $id);
-                $client->query($qRemove)->read();
-            } catch (\Exception $e) {
-                // Ignore technical warnings from the library if they contain these common success-artifact strings
-                $msg = $e->getMessage();
-                if (!str_contains($msg, 'Undefined array key') && 
-                    !str_contains($msg, 'offset 0') && 
-                    !str_contains($msg, 'array key 0')) {
-                    throw $e;
-                }
-            }
-
-            // If this user was in our records, delete it too
-            if ($username) {
-                \App\Models\BillingHistory::where('username', $username)
+            if ($useRadius) {
+                // In RADIUS mode, ID is from DB
+                $voucher = \App\Models\BillingHistory::where('id', $id)
                     ->where('user_id', auth()->id())
-                    ->delete();
+                    ->first();
+                
+                if ($voucher) {
+                    $username = $voucher->username;
+                    $voucher->delete();
+                } else {
+                    return back()->with('error', 'Voucher tidak ditemukan di database.');
+                }
+            } else {
+                $client = $this->getClient();
+                if (!$client) {
+                    return back()->with('error', 'Gagal menghubungkan ke MikroTik. Pastikan router online.');
+                }
+
+                // Fetch user first to get username for DB sync
+                $qPrint = new \RouterOS\Query('/ip/hotspot/user/print');
+                $qPrint->where('.id', $id);
+                $user = $client->query($qPrint)->read();
+                $username = !empty($user) ? ($user[0]['name'] ?? null) : null;
+
+                if (empty($user)) {
+                    return back()->with('error', 'Voucher tidak ditemukan di MikroTik.');
+                }
+
+                // Remove from MikroTik
+                try {
+                    $qRemove = new \RouterOS\Query('/ip/hotspot/user/remove');
+                    $qRemove->add('=.id=' . $id);
+                    $client->query($qRemove)->read();
+                } catch (\Exception $e) {
+                    $msg = $e->getMessage();
+                    if (!str_contains($msg, 'Undefined array key') && 
+                        !str_contains($msg, 'offset 0') && 
+                        !str_contains($msg, 'array key 0')) {
+                        throw $e;
+                    }
+                }
+
+                // If this user was in our records, delete it too
+                if ($username) {
+                    \App\Models\BillingHistory::where('username', $username)
+                        ->where('user_id', auth()->id())
+                        ->delete();
+                }
             }
 
             return back()->with('success', 'User berhasil dihapus.');
@@ -564,7 +675,7 @@ class VoucherController extends Controller
     // --- Template Manager Module ---
     public function templates()
     {
-        $templates = VoucherTemplate::all();
+        $templates = \App\Models\VoucherTemplate::all();
         return view('vouchers.templates', compact('templates'));
     }
 
@@ -597,9 +708,9 @@ class VoucherController extends Controller
 
     public function deleteTemplate($id)
     {
-        $template = VoucherTemplate::findOrFail($id);
+        $template = \App\Models\VoucherTemplate::findOrFail($id);
         
-        if ($template->is_system) {
+        if ($template->user_id === null || $template->is_system) {
             return back()->with('error', 'Default system templates cannot be deleted.');
         }
 
@@ -618,6 +729,7 @@ class VoucherController extends Controller
         
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
+        $search = $request->get('search');
 
         $client = $this->getClient();
         $serverDateTime = null;
@@ -664,7 +776,10 @@ class VoucherController extends Controller
         // Base Query
         $query = DB::table('billing_history as bh')
             ->leftJoin('customer_members as cm', 'bh.reseller_id', '=', 'cm.id')
-            ->leftJoin('hotspot_profile_metadata as pm', 'bh.profile', '=', 'pm.profile_name')
+            ->leftJoin('hotspot_profile_metadata as pm', function($join) {
+                $join->on('bh.profile', '=', 'pm.profile_name')
+                     ->on('bh.user_id', '=', 'pm.user_id');
+            })
             ->select(
                 'bh.*', 
                 'cm.name as reseller_name', 
@@ -678,6 +793,14 @@ class VoucherController extends Controller
         if ($startDate && $endDate) {
             $query->whereBetween('bh.first_login_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
         }
+        
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('bh.voucher_code', 'like', "%{$search}%")
+                  ->orWhere('bh.profile', 'like', "%{$search}%")
+                  ->orWhere('cm.name', 'like', "%{$search}%");
+            });
+        }
 
         $vouchers = $query->orderBy('bh.first_login_at', 'desc')
             ->paginate(50);
@@ -690,7 +813,10 @@ class VoucherController extends Controller
         
         // Today's sales
         $todaySales = DB::table('billing_history as bh')
-            ->leftJoin('hotspot_profile_metadata as pm', 'bh.profile', '=', 'pm.profile_name')
+            ->leftJoin('hotspot_profile_metadata as pm', function($join) {
+                $join->on('bh.profile', '=', 'pm.profile_name')
+                     ->on('bh.user_id', '=', 'pm.user_id');
+            })
             ->whereDate('bh.first_login_at', $today)
             ->where('bh.user_id', auth()->id())
             ->select(
@@ -704,7 +830,10 @@ class VoucherController extends Controller
         
         // This month's sales
         $monthSales = DB::table('billing_history as bh')
-            ->leftJoin('hotspot_profile_metadata as pm', 'bh.profile', '=', 'pm.profile_name')
+            ->leftJoin('hotspot_profile_metadata as pm', function($join) {
+                $join->on('bh.profile', '=', 'pm.profile_name')
+                     ->on('bh.user_id', '=', 'pm.user_id');
+            })
             ->whereYear('bh.first_login_at', $thisYear)
             ->whereMonth('bh.first_login_at', $thisMonth)
             ->where('bh.user_id', auth()->id())
@@ -725,26 +854,33 @@ class VoucherController extends Controller
 
         // Grand Total (all time sold vouchers)
         $grandTotal = DB::table('billing_history as bh')
-            ->leftJoin('hotspot_profile_metadata as pm', 'bh.profile', '=', 'pm.profile_name')
+            ->leftJoin('hotspot_profile_metadata as pm', function($join) {
+                $join->on('bh.profile', '=', 'pm.profile_name')
+                     ->on('bh.user_id', '=', 'pm.user_id');
+            })
             ->whereNotNull('bh.first_login_at')
             ->where('bh.user_id', auth()->id())
             ->sum(DB::raw('COALESCE(pm.price, bh.price)'));
 
-        return view('vouchers.sold', compact('vouchers', 'grandTotal', 'salesToday', 'salesMonth', 'countToday', 'countMonth', 'startDate', 'endDate', 'filteredTotal'));
+        return view('vouchers.sold', compact('vouchers', 'grandTotal', 'salesToday', 'salesMonth', 'countToday', 'countMonth', 'startDate', 'endDate', 'filteredTotal', 'search'));
     }
 
     public function exportSold(Request $request)
     {
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
+        $search = $request->get('search');
         
         if (!$startDate || !$endDate) {
             return redirect()->back()->with('error', 'Silakan pilih rentang tanggal.');
         }
 
-        $vouchers = DB::table('billing_history as bh')
+        $query = DB::table('billing_history as bh')
             ->leftJoin('customer_members as cm', 'bh.reseller_id', '=', 'cm.id')
-            ->leftJoin('hotspot_profile_metadata as pm', 'bh.profile', '=', 'pm.profile_name')
+            ->leftJoin('hotspot_profile_metadata as pm', function($join) {
+                $join->on('bh.profile', '=', 'pm.profile_name')
+                     ->on('bh.user_id', '=', 'pm.user_id');
+            })
             ->select(
                 'bh.first_login_at',
                 'bh.voucher_code',
@@ -754,9 +890,17 @@ class VoucherController extends Controller
             )
             ->where('bh.user_id', auth()->id())
             ->whereNotNull('bh.first_login_at')
-            ->whereBetween('bh.first_login_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59'])
-            ->orderBy('bh.first_login_at', 'asc')
-            ->get();
+            ->whereBetween('bh.first_login_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+            
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('bh.voucher_code', 'like', "%{$search}%")
+                  ->orWhere('bh.profile', 'like', "%{$search}%")
+                  ->orWhere('cm.name', 'like', "%{$search}%");
+            });
+        }
+            
+        $vouchers = $query->orderBy('bh.first_login_at', 'asc')->get();
 
         $filename = "rekap_voucher_" . $startDate . "_to_" . $endDate . ".csv";
         
@@ -799,7 +943,10 @@ class VoucherController extends Controller
         // Logic from voucher_recap_logic.php
         // Group by Date
         $recapData = DB::table('billing_history as bh')
-            ->leftJoin('hotspot_profile_metadata as pm', 'bh.profile', '=', 'pm.profile_name')
+            ->leftJoin('hotspot_profile_metadata as pm', function($join) {
+                $join->on('bh.profile', '=', 'pm.profile_name')
+                     ->on('bh.user_id', '=', 'pm.user_id');
+            })
             ->select(
                 DB::raw('DATE(bh.date_sold) as sale_date'),
                 DB::raw('COUNT(*) as qty'),
@@ -884,7 +1031,10 @@ class VoucherController extends Controller
         // Get voucher distribution data from billing_history (aggregated by reseller)
         $distributions = DB::table('billing_history as bh')
             ->leftJoin('customer_members as cm', 'bh.reseller_id', '=', 'cm.id')
-            ->leftJoin('hotspot_profile_metadata as pm', 'bh.profile', '=', 'pm.profile_name')
+            ->leftJoin('hotspot_profile_metadata as pm', function($join) {
+                $join->on('bh.profile', '=', 'pm.profile_name')
+                     ->on('bh.user_id', '=', 'pm.user_id');
+            })
             ->select(
                 'bh.reseller_id',
                 'cm.name as reseller_name',
@@ -928,10 +1078,12 @@ class VoucherController extends Controller
             ->orderBy('name')
             ->get();
             
-        return view('vouchers.distribution', compact('distributions', 'batches', 'resellers'));
+        $templates = \App\Models\VoucherTemplate::orderBy('name')->get();
+            
+        return view('vouchers.distribution', compact('distributions', 'batches', 'resellers', 'templates'));
     }
     
-    public function printBatch($batchId) {
+    public function printBatch(Request $request, $batchId) {
         // Fetch vouchers from this batch
         $vouchers = BillingHistory::where('batch_id', $batchId)->get();
         
@@ -939,11 +1091,11 @@ class VoucherController extends Controller
             return redirect()->route('voucher.distribution')->with('error', 'Batch tidak ditemukan');
         }
         
-        // Get template from first voucher
+        // Get template from request or fallback
         $template = null;
-        $templateId = $vouchers->first()->template_id;
+        $templateId = $request->template_id ?: $vouchers->first()->template_id;
         if ($templateId) {
-            $template = VoucherTemplate::find($templateId);
+            $template = \App\Models\VoucherTemplate::find($templateId);
         }
         
         // Get batch info

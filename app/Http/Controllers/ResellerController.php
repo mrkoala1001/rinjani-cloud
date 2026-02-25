@@ -151,6 +151,15 @@ class ResellerController extends Controller
     {
         $ownerId = auth()->id();
         
+        if (auth()->user()->role === 'mitra-reseller') {
+            $user = auth()->user();
+            $profile = \App\Models\Reseller::where('user_id', $user->id)->first();
+            if (!$profile) {
+                $profile = \App\Models\Reseller::create(['user_id' => $user->id, 'name' => $user->name, 'balance' => 0]);
+            }
+            return view('reseller.balance', compact('profile'));
+        }
+        
         // All resellers for the dropdown
         $allResellers = \App\Models\CustomerMember::where('user_id', $ownerId)
             ->where('type', 'RESELLER')

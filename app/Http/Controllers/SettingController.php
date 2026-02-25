@@ -20,8 +20,10 @@ class SettingController extends Controller
             'user' => 'required',
             'pass' => 'required',
             'port' => 'nullable|integer',
+            'use_radius' => 'nullable|boolean',
         ]);
         
+        $validated['use_radius'] = $request->has('use_radius');
         $validated['user_id'] = auth()->id();
         
         MikrotikConfig::updateOrCreate(
