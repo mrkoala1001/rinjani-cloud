@@ -13,9 +13,12 @@ use Illuminate\Support\Facades\DB;
 use RouterOS\Client;
 use RouterOS\Query;
 use Exception;
+use App\Traits\VoucherTemplateHelpers;
 
 class ResellerController extends Controller
 {
+    use VoucherTemplateHelpers;
+
     public function index()
     {
         $user = auth()->user();
@@ -178,6 +181,20 @@ class ResellerController extends Controller
         ]);
     }
 
+    public function myBalanceHistory()
+    {
+        $user = auth()->user();
+        if ($user->role === 'mitra-reseller') {
+            $history = \App\Models\BalanceHistory::where('customer_id', $user->id)
+                ->latest()
+                ->paginate(15);
+                
+            return view('reseller.balance_history', compact('history'));
+        }
+        
+        return redirect()->back()->with('error', 'Akses ditolak.');
+    }
+
     public function addBalance(Request $request)
     {
         $request->validate([
@@ -231,7 +248,7 @@ class ResellerController extends Controller
     public function generateVoucher()
     {
         $user = auth()->user();
-        $templates = VoucherTemplate::orderBy('name')->get();
+        $templates = $this->getVoucherTemplates($user->created_by);
         $profiles = [];
         $serverProfiles = [];
         
@@ -240,6 +257,18 @@ class ResellerController extends Controller
             try {
                 $profiles = $client->query('/ip/hotspot/user/profile/print')->read();
                 $serverProfiles = $client->query('/ip/hotspot/print')->read();
+
+                // Attach local metadata (price, validity, etc.)
+                $authId = auth()->id();
+                foreach ($profiles as &$prof) {
+                    $meta = \App\Models\HotspotProfileMetadata::withoutGlobalScope(\App\Scopes\TenantScope::class)
+                        ->where('profile_name', $prof['name'])
+                        ->where('user_id', $authId)
+                        ->first();
+                    $prof['local_metadata'] = $meta;
+                }
+                
+                $profiles = array_values($profiles);
             } catch (Exception $e) {
                 // Ignore error for now
             }
@@ -279,6 +308,16 @@ class ResellerController extends Controller
         }
         
         return view('reseller.balance', compact('profile'));
+    }
+
+    public function balanceHistory()
+    {
+        $user = auth()->user();
+        $history = \App\Models\BalanceHistory::where('customer_id', $user->id)
+            ->latest()
+            ->paginate(15);
+            
+        return view('reseller.balance_history', compact('history'));
     }
 
     public function distribution()

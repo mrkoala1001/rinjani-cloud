@@ -67,8 +67,14 @@
                         <tr class="hover:bg-slate-50/30 transition-colors">
                             <td class="px-6 py-4 font-black text-slate-800">{{ $reseller->name }}</td>
                             <td class="px-6 py-4 text-right font-black text-slate-800">Rp {{ number_format($reseller->balance ?? 0, 0, ',', '.') }}</td>
-                            <td class="px-6 py-4 text-right">
+                            <td class="px-6 py-4 text-right flex items-center justify-end gap-3">
                                 <button onclick="document.querySelector('select[name=reseller_id]').value = '{{ $reseller->id }}';" class="text-xs font-black text-blue-500 hover:underline">Top-Up</button>
+                                <span class="text-slate-200">|</span>
+                                <form action="{{ route('hotsupport.mitra-reseller.resetBalance') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin meriset saldo {{ $reseller->name }} menjadi Rp 0?')">
+                                    @csrf
+                                    <input type="hidden" name="reseller_id" value="{{ $reseller->id }}">
+                                    <button type="submit" class="text-xs font-black text-red-500 hover:text-red-700 hover:underline">Reset</button>
+                                </form>
                             </td>
                         </tr>
                         @endforeach

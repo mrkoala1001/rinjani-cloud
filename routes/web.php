@@ -13,6 +13,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HotSupportController;
 use App\Http\Controllers\ResellerController;
+use App\Http\Controllers\TelegramController;
 
 // --------------------------------------------------------------------------
 // DPOTCOM.COM - MAIN LANDING PAGE
@@ -116,6 +117,9 @@ Route::domain('hotpot.depootcom.com')->group(function () {
     // Depootcom Landing Page Internal Access
     Route::get('/depootcom', [\App\Http\Controllers\Depootcom\LandingController::class, 'index'])->name('depootcom.landing.internal');
 
+    // Telegram Bot Webhook
+    Route::post('/telegram/webhook', [TelegramController::class, 'handle']);
+
     // Public Authentication Routes
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
@@ -128,6 +132,7 @@ Route::domain('hotpot.depootcom.com')->group(function () {
         // Profile Account Route
         Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
         Route::post('/profile', [DashboardController::class, 'updateProfile'])->name('profile.update');
+        Route::get('/api/router-status', [DashboardController::class, 'getRouterStatus'])->name('api.router-status');
         
         // ISP / HOT SUPPORT Routes
         Route::middleware('role:isp')->prefix('hotsupport')->name('hotsupport.')->group(function () {
@@ -153,11 +158,14 @@ Route::domain('hotpot.depootcom.com')->group(function () {
              Route::get('/mitra-reseller/balance', [HotSupportController::class, 'manageMitraResellerBalance'])->name('mitra-reseller.balance');
              Route::get('/mitra-reseller/balance/history', [HotSupportController::class, 'mitraResellerBalanceHistory'])->name('mitra-reseller.balance.history');
              Route::post('/mitra-reseller/balance', [HotSupportController::class, 'addMitraResellerBalance'])->name('mitra-reseller.addBalance');
+             Route::post('/mitra-reseller/balance/reset', [HotSupportController::class, 'resetMitraResellerBalance'])->name('mitra-reseller.resetBalance');
              Route::get('/mitra-reseller/profiles', [HotSupportController::class, 'manageMitraResellerProfiles'])->name('mitra-reseller.profiles');
              Route::get('/mitra-reseller/profiles/{id}', [HotSupportController::class, 'viewMitraResellerProfiles'])->name('mitra-reseller.profiles.show');
              Route::post('/mitra-reseller/profiles/{id}', [HotSupportController::class, 'storeMitraResellerProfile'])->name('mitra-reseller.profiles.store');
              Route::post('/mitra-reseller/profiles/{id}/update', [HotSupportController::class, 'updateMitraResellerProfile'])->name('mitra-reseller.profiles.update');
              Route::get('/mitra-reseller/profiles/{id}/delete', [HotSupportController::class, 'deleteMitraResellerProfile'])->name('mitra-reseller.profiles.delete');
+             Route::get('/mitra-reseller/profiles-template', [HotSupportController::class, 'downloadMitraResellerProfileTemplate'])->name('mitra-reseller.profiles.template');
+             Route::post('/mitra-reseller/profiles/{id}/import', [HotSupportController::class, 'importMitraResellerProfiles'])->name('mitra-reseller.profiles.import');
 
              // Report & Ticketing System
              Route::get('/tickets', [HotSupportController::class, 'ticketIndex'])->name('tickets.index');
@@ -172,6 +180,7 @@ Route::domain('hotpot.depootcom.com')->group(function () {
 
         // Shared / Impersonation Exit
         Route::get('/impersonate/leave', [HotSupportController::class, 'leaveImpersonation'])->name('impersonate.leave');
+        Route::delete('/balance-history/{id}', [HotSupportController::class, 'deleteBalanceHistory'])->name('balance.history.delete');
 
         // Owner / HOT POT Routes
         Route::middleware('role:owner')->group(function () {
@@ -267,6 +276,7 @@ Route::domain('hotpot.depootcom.com')->group(function () {
                 Route::get('/create', [ResellerController::class, 'create'])->name('create');
                 Route::post('/', [ResellerController::class, 'store'])->name('store');
                 Route::get('/manage-balance', [ResellerController::class, 'manageBalance'])->name('balance');
+                Route::get('/manage-balance/history', [ResellerController::class, 'myBalanceHistory'])->name('history');
                 Route::post('/balance', [ResellerController::class, 'addBalance'])->name('addBalance');
                 Route::get('/{id}/edit', [ResellerController::class, 'edit'])->name('edit');
                 Route::put('/{id}', [ResellerController::class, 'update'])->name('update');
@@ -287,6 +297,7 @@ Route::domain('hotpot.depootcom.com')->group(function () {
             Route::get('/vouchers', [ResellerController::class, 'soldVouchers'])->name('vouchers');
             Route::get('/generate', [ResellerController::class, 'generateVoucher'])->name('generate');
             Route::get('/wallet', [ResellerController::class, 'balance'])->name('balance');
+            Route::get('/wallet/history', [ResellerController::class, 'balanceHistory'])->name('balance.history');
             Route::get('/distribution', [ResellerController::class, 'distribution'])->name('distribution');
         });
 

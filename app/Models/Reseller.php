@@ -12,5 +12,5 @@ class Reseller extends Model
 
     use HasFactory;
     
-    protected $fillable = ['name', 'balance', 'phone'];
+    protected $fillable = ['user_id', 'name', 'balance', 'phone'];
 }

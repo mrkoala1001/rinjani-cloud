@@ -10,9 +10,12 @@ use App\Models\CustomerMember;
 use App\Models\BillingHistory;
 use App\Models\User;
 use App\Models\HotspotProfileMetadata;
+use App\Traits\VoucherTemplateHelpers;
 
 class DashboardController extends Controller
 {
+    use VoucherTemplateHelpers;
+
     public function showLogin()
     {
         return view('customer_app.login');
@@ -154,10 +157,8 @@ class DashboardController extends Controller
             $vouchers = [];
             $batchId = 'APP-' . now()->format('YmdHis');
 
-            $templateId = \App\Models\VoucherTemplate::where('user_id', $customer->user_id)->orderBy('id')->value('id');
-            if (!$templateId) {
-                $templateId = \App\Models\VoucherTemplate::orderBy('id')->value('id');
-            }
+            $templates = $this->getVoucherTemplates($customer->user_id);
+            $templateId = $templates->first() ? $templates->first()->id : null;
 
             for ($i = 0; $i < $qty; $i++) {
                 $code = strtoupper(substr(md5(uniqid()), 0, 6));

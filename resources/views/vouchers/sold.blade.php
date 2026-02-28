@@ -105,11 +105,12 @@
             <table class="min-w-full leading-normal text-xs">
                 <thead>
                     <tr class="bg-gray-50 uppercase text-gray-600 border-b">
-                        <th class="px-4 py-3 text-left font-bold">Waktu</th>
-                        <th class="px-4 py-3 text-left font-bold">Nama User</th>
+                        <th class="px-4 py-3 text-left font-bold">Waktu Login</th>
+                        <th class="px-4 py-3 text-left font-bold">Log Berakhir</th>
+                        <th class="px-4 py-3 text-left font-bold">Reseller</th>
                         <th class="px-4 py-3 text-left font-bold">Profile</th>
-                        <th class="px-4 py-3 text-left font-bold">Server</th>
-                        <th class="px-4 py-3 text-left font-bold">Harga</th>
+                        <th class="px-4 py-3 text-left font-bold">Password</th>
+                        <th class="px-4 py-3 text-right font-bold">Harga</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
@@ -118,19 +119,42 @@
                         <td class="px-4 py-3 text-gray-500 font-mono">
                             {{ \Carbon\Carbon::parse($v->first_login_at)->format('d/m/Y H:i') }}
                         </td>
-                        <td class="px-4 py-3 font-bold text-gray-800 font-mono">{{ $v->voucher_code }}</td>
-                        <td class="px-4 py-3 font-bold text-secondary italic">
-                            {{ $v->profile }} 
-                            <span class="text-[10px] text-gray-400 font-normal">({{ $v->reseller_name ?? 'Admin' }})</span>
+                        <td class="px-4 py-3 text-gray-500 font-mono">
+                            @php
+                                $expiry = '-';
+                                if ($v->first_login_at && $v->timelimit) {
+                                    try {
+                                        $date = \Carbon\Carbon::parse($v->first_login_at);
+                                        if (preg_match('/(\d+)([dhms])/', $v->timelimit, $matches)) {
+                                            $val = (int)$matches[1];
+                                            $unit = $matches[2];
+                                            if ($unit == 'd') $date->addDays($val);
+                                            elseif ($unit == 'h') $date->addHours($val);
+                                            elseif ($unit == 'm') $date->addMinutes($val);
+                                            elseif ($unit == 's') $date->addSeconds($val);
+                                            $expiry = $date->format('d/m/Y H:i');
+                                        }
+                                    } catch (\Exception $e) {}
+                                }
+                            @endphp
+                            {{ $expiry }}
                         </td>
-                        <td class="px-4 py-3 text-gray-500 font-mono">{{ $v->server ?? 'all' }}</td>
-                        <td class="px-4 py-3 font-bold text-green-600 font-mono">
+                        <td class="px-4 py-3 font-bold text-gray-700">
+                            {{ $v->reseller_name ?? 'Admin' }}
+                        </td>
+                        <td class="px-4 py-3 text-secondary font-black italic">
+                            {{ $v->profile }}
+                        </td>
+                        <td class="px-4 py-3 font-mono text-gray-600">
+                            {{ $v->password }}
+                        </td>
+                        <td class="px-4 py-3 font-bold text-green-600 font-mono text-right">
                             Rp {{ number_format($v->current_meta_price ?? $v->price, 0, ',', '.') }}
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="5" class="px-5 py-20 bg-white text-center text-gray-400 italic font-bold">
+                        <td colspan="6" class="px-5 py-20 bg-white text-center text-gray-400 italic font-bold">
                             Tidak ada riwayat penjualan ditemukan (Last 100).
                         </td>
                     </tr>

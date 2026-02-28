@@ -16,7 +16,8 @@
             (u.name && u.name.toLowerCase().includes(q)) || 
             (u.address && u.address.toLowerCase().includes(q)) ||
             (u['caller-id'] && u['caller-id'].toLowerCase().includes(q)) ||
-            (u.service && u.service.toLowerCase().includes(q))
+            (u.service && u.service.toLowerCase().includes(q)) ||
+            (u.profile && u.profile.toLowerCase().includes(q))
         );
     },
     init() {
@@ -58,6 +59,7 @@
                     <tr class="bg-gray-100 uppercase text-gray-600 border-b text-[10px]">
                         <th class="px-4 py-2 text-left font-bold w-10">#</th>
                         <th class="px-4 py-2 text-left font-bold">User</th>
+                        <th class="px-4 py-2 text-left font-bold">Profile</th>
                         <th class="px-4 py-2 text-left font-bold">Service</th>
                         <th class="px-4 py-2 text-left font-bold">IP Address</th>
                         <th class="px-4 py-2 text-left font-bold">Mac Address</th>
@@ -71,6 +73,9 @@
                         <tr class="hover:bg-blue-50 transition border-b border-gray-100 whitespace-nowrap">
                              <td class="px-4 py-2 text-gray-500 font-mono" x-text="index + 1"></td>
                              <td class="px-4 py-2 font-bold text-blue-600" x-text="u.name"></td>
+                             <td class="px-4 py-2">
+                                <span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700 font-bold" x-text="u.profile || '-'"></span>
+                             </td>
                              <td class="px-4 py-2 text-gray-600" x-text="u.service"></td>
                              <td class="px-4 py-2 text-gray-600 font-mono" x-text="u.address"></td>
                              <td class="px-4 py-2 text-purple-600 font-mono" x-text="u['caller-id']"></td>
@@ -153,6 +158,10 @@
                             <div class="flex justify-between items-center border-b border-slate-200/50 pb-3">
                                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Username</span>
                                 <span class="text-sm font-black text-blue-600 font-mono" x-text="viewData.name"></span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-slate-200/50 pb-3">
+                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Profile</span>
+                                <span class="text-sm font-black text-purple-600" x-text="viewData.profile || '-'"></span>
                             </div>
                             <div class="flex justify-between items-center border-b border-slate-200/50 pb-3">
                                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Service</span>

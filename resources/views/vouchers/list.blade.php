@@ -145,12 +145,14 @@
                                         <i class="fas fa-edit text-sm"></i>
                                     </button>
  
+                                    @if(auth()->user()->role !== 'mitra-reseller' || session()->has('impersonated_by'))
                                     <!-- Delete Button -->
                                     <a :href="'{{ url('voucher/delete') }}/' + u['.id']" 
                                        onclick="return confirm('Hapus voucher ini dari MikroTik?')"
                                        class="inline-flex items-center justify-center p-2 bg-red-100 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition shadow-sm" title="Delete Voucher">
                                         <i class="fas fa-trash-alt text-sm"></i>
                                     </a>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

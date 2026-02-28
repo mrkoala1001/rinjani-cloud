@@ -29,6 +29,10 @@ class User extends Authenticatable
         'location',
         'notes',
         'origin',
+        'dns',
+        'winbox',
+        'ip_api',
+        'whatsapp',
     ];
 
     /**

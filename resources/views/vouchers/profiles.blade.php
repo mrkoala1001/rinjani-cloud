@@ -13,16 +13,18 @@
 }">
     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <h2 class="text-2xl font-bold text-gray-800">User Profiles (Paket Voucher)</h2>
+        @if(auth()->user()->role !== 'mitra-reseller' || session()->has('impersonated_by'))
         <div class="flex space-x-2">
-            <a href="{{ route('voucher.profiles') }}" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded shadow transition text-sm">
+            <a href="{{ route('voucher.profiles') }}" class="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded shadow transition text-sm flex items-center">
                 <i class="fas fa-sync mr-2"></i>Sync Profiles
             </a>
-            <button @click="addModalOpen = true" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition text-sm">
+            <button @click="addModalOpen = true" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition text-sm flex items-center">
                 <i class="fas fa-plus mr-2"></i>Tambah Paket
             </button>
         </div>
+        @endif
     </div>
-    
+
     <div class="bg-white shadow-md rounded-lg overflow-hidden border-t-4 border-purple-600">
         <div class="overflow-x-auto">
             <table class="min-w-full leading-normal text-xs">
@@ -64,26 +66,28 @@
                         <td class="px-4 py-3 text-center">
                             <div class="flex items-center justify-center space-x-2">
                                 <!-- View Button -->
-                                <button @click="currentProfile = {{ $profileData }}; viewModalOpen = true" 
+                                <button @click="currentProfile = {{ $profileData }}; viewModalOpen = true"
                                         class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold transition inline-flex items-center"
                                         title="Lihat Detail">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                
+
+                                @if(auth()->user()->role !== 'mitra-reseller' || session()->has('impersonated_by'))
                                 <!-- Edit Button -->
-                                <button @click="editData = {{ $profileData }}; editModalOpen = true" 
+                                <button @click="editData = {{ $profileData }}; editModalOpen = true"
                                         class="bg-yellow-500 hover:bg-yellow-600 text-white px-2 py-1 rounded text-xs font-bold transition inline-flex items-center"
                                         title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                
+
                                 <!-- Delete Button -->
-                                <a href="{{ route('voucher.deleteProfile', ['id' => $prof['.id'], 'name' => $prof['name']]) }}" 
+                                <a href="{{ route('voucher.deleteProfile', ['id' => $prof['.id'], 'name' => $prof['name']]) }}"
                                    onclick="return confirm('Hapus profil {{ $prof['name'] }}?')"
                                    class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold transition inline-flex items-center"
                                    title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </a>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -97,6 +101,7 @@
         </div>
     </div>
 
+    @if(auth()->user()->role !== 'mitra-reseller' || session()->has('impersonated_by'))
     <!-- Add Profile Modal -->
     <div x-show="addModalOpen" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
         <div class="relative p-5 border w-full max-w-2xl shadow-2xl rounded-lg bg-white" @click.away="addModalOpen = false">
@@ -106,7 +111,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
+
             <!-- Help Notice -->
             <div class="bg-blue-50 border-l-4 border-blue-500 p-3 mb-4">
                 <div class="flex">
@@ -124,7 +129,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <form action="{{ route('voucher.storeProfile') }}" method="POST" class="space-y-4">
                 @csrf
                 <div class="grid grid-cols-2 gap-4">
@@ -132,7 +137,7 @@
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">
                             Nama Profil <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" name="name" required 
+                        <input type="text" name="name" required
                                placeholder="contoh: 1Hari-2GB"
                                class="w-full border rounded px-3 py-2 text-sm focus:ring-blue-500 focus:outline-none">
                     </div>
@@ -140,7 +145,7 @@
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">
                             Shared Users <span class="text-red-500">*</span>
                         </label>
-                        <input type="number" name="shared_users" value="1" 
+                        <input type="number" name="shared_users" value="1"
                                class="w-full border rounded px-3 py-2 text-sm focus:outline-none">
                         <p class="text-xs text-gray-500 mt-1">Default: 1 device</p>
                     </div>
@@ -148,8 +153,8 @@
 
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Rate Limit (upload/download)</label>
-                    <input type="text" name="rate_limit" 
-                           placeholder="contoh: 2M/2M atau 512k/512k" 
+                    <input type="text" name="rate_limit"
+                           placeholder="contoh: 2M/2M atau 512k/512k"
                            class="w-full border rounded px-3 py-2 text-sm focus:outline-none">
                     <p class="text-xs text-gray-500 mt-1">Format: upload/download (M = Mbps, k = Kbps)</p>
                 </div>
@@ -157,22 +162,22 @@
                 <div class="grid grid-cols-3 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Validity</label>
-                        <input type="text" name="validity" 
-                               placeholder="contoh: 1d" 
+                        <input type="text" name="validity"
+                               placeholder="contoh: 1d"
                                class="w-full border rounded px-3 py-2 text-sm focus:outline-none">
                         <p class="text-xs text-gray-500 mt-1">d=hari, h=jam, m=menit</p>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Price (Modal)</label>
-                        <input type="number" name="price" 
-                               placeholder="5000" 
+                        <input type="number" name="price"
+                               placeholder="5000"
                                class="w-full border rounded px-3 py-2 text-sm focus:outline-none">
                         <p class="text-xs text-gray-500 mt-1">Harga beli</p>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Selling (Jual)</label>
-                        <input type="number" name="sell_price" 
-                               placeholder="6000" 
+                        <input type="number" name="sell_price"
+                               placeholder="6000"
                                class="w-full border rounded px-3 py-2 text-sm focus:outline-none">
                         <p class="text-xs text-gray-500 mt-1">Harga jual</p>
                     </div>
@@ -186,6 +191,7 @@
             </form>
         </div>
     </div>
+    @endif
 
     <!-- View Profile Modal -->
     <div x-show="viewModalOpen" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
@@ -196,7 +202,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
+
             <div class="space-y-3">
                 <div class="flex justify-between border-b pb-2">
                     <span class="text-sm font-bold text-gray-600">Nama Profil:</span>
@@ -223,7 +229,7 @@
                     <span class="text-sm text-blue-600 font-bold" x-text="'Rp ' + parseInt(currentProfile.sell_price || 0).toLocaleString('id-ID')"></span>
                 </div>
             </div>
-            
+
             <div class="flex justify-end pt-4 border-t mt-4">
                 <button @click="viewModalOpen = false" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition">
                     Tutup
@@ -232,6 +238,7 @@
         </div>
     </div>
 
+    @if(auth()->user()->role !== 'mitra-reseller' || session()->has('impersonated_by'))
     <!-- Edit Profile Modal -->
     <div x-show="editModalOpen" x-cloak class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
         <div class="relative p-5 border w-full max-w-2xl shadow-2xl rounded-lg bg-white" @click.away="editModalOpen = false">
@@ -241,7 +248,7 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            
+
             <!-- Help Notice -->
             <div class="bg-yellow-50 border-l-4 border-yellow-500 p-3 mb-4">
                 <div class="flex">
@@ -251,12 +258,12 @@
                     </div>
                 </div>
             </div>
-            
+
             <form action="{{ route('voucher.updateProfile') }}" method="POST" class="space-y-4">
                 @csrf
                 <input type="hidden" name="id" x-model="editData.id">
                 <input type="hidden" name="name" x-model="editData.name">
-                
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nama Profil</label>
@@ -298,7 +305,7 @@
                 </div>
 
                 <div class="flex justify-end space-x-2 pt-4 border-t mt-4">
-                    <button type="button" @click="editModalOpen = false" 
+                    <button type="button" @click="editModalOpen = false"
                             class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition">
                         Batal
                     </button>
@@ -309,5 +316,6 @@
             </form>
         </div>
     </div>
+    @endif
 </div>
 @endsection

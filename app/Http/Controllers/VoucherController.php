@@ -12,9 +12,13 @@ use App\Models\BillingHistory;
 use RouterOS\Client;
 use RouterOS\Query;
 use Exception;
+use Illuminate\Support\Facades\File;
+use App\Traits\VoucherTemplateHelpers;
 
 class VoucherController extends Controller
 {
+    use VoucherTemplateHelpers;
+
     private function getClient($timeout = 10)
     {
         $mkConfig = MikrotikConfig::where('user_id', auth()->id())->first();
@@ -57,7 +61,14 @@ class VoucherController extends Controller
         return $prefix . $randomString;
     }
 
+    private function getTemplates()
+    {
+        return $this->getVoucherTemplates();
+    }
+
+
     public function index()
+
     {
         return redirect()->route('voucher.list');
     }
@@ -66,7 +77,8 @@ class VoucherController extends Controller
     {
         // Fetch resellers from CustomerMember table (type = 'Reseller')
         $resellers = \App\Models\CustomerMember::where('type', 'Reseller')->orderBy('name')->get();
-        $templates = VoucherTemplate::orderBy('name')->get();
+        $templates = $this->getTemplates();
+
         $profiles = [];
         $serverProfiles = []; // Add this variable to avoid undefined variable error
         
@@ -75,7 +87,34 @@ class VoucherController extends Controller
             try {
                 // Fetch User Profiles from RouterOS
                 // Using print without proplist for now to get everything, or define specific props if needed
-                $profiles = $client->query('/ip/hotspot/user/profile/print')->read();
+                $allProfiles = $client->query('/ip/hotspot/user/profile/print')->read();
+                
+                // Filter if mitra-reseller: only ISP-managed profiles (metadata exists)
+                // Skip filter if impersonated (Admin/ISP view)
+                if (auth()->user()->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
+                    $managedProfileNames = \App\Models\HotspotProfileMetadata::withoutGlobalScopes()
+                        ->where('user_id', auth()->id())
+                        ->pluck('profile_name')
+                        ->toArray();
+                        
+                    $profiles = array_filter($allProfiles, function($p) use ($managedProfileNames) {
+                        return in_array($p['name'], $managedProfileNames);
+                    });
+                    
+                    // CRITICAL: Re-index array so json_encode returns a JS Array, not an Object
+                    $profiles = array_values($profiles);
+                } else {
+                    $profiles = $allProfiles;
+                }
+
+                // Attach metadata to each profile
+                foreach ($profiles as &$prof) {
+                    $meta = \App\Models\HotspotProfileMetadata::withoutGlobalScopes()
+                        ->where('user_id', auth()->id())
+                        ->where('profile_name', $prof['name'])
+                        ->first();
+                    $prof['local_metadata'] = $meta;
+                }
                 
                 // Fetch Servers for dropdown
                 $serverProfiles = $client->query('/ip/hotspot/print')->read();
@@ -420,6 +459,10 @@ class VoucherController extends Controller
             // If using RADIUS, the list might be different.
         }
 
+        if (auth()->user()->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
+            return back()->with('error', 'Mitra Reseller tidak diizinkan untuk menghapus voucher.');
+        }
+
         $client = $this->getClient();
         if (!$client && !$useRadius) {
             return back()->with('error', 'Gagal menghubungkan ke MikroTik. Pastikan router online.');
@@ -499,6 +542,14 @@ class VoucherController extends Controller
                 foreach ($profiles as &$prof) {
                     $meta = HotspotProfileMetadata::where('profile_name', $prof['name'])->first();
                     $prof['local_metadata'] = $meta;
+                }
+
+                // Filter if mitra-reseller: only ISP-managed profiles (metadata exists)
+                // Skip filter if impersonated
+                if (auth()->user()->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
+                    $profiles = array_filter($profiles, function($p) {
+                        return $p['local_metadata'] !== null;
+                    });
                 }
             } catch (Exception $e) {
                 session()->flash('error', 'RouterOS Error: ' . $e->getMessage());
@@ -675,7 +726,7 @@ class VoucherController extends Controller
     // --- Template Manager Module ---
     public function templates()
     {
-        $templates = \App\Models\VoucherTemplate::all();
+        $templates = $this->getTemplates();
         return view('vouchers.templates', compact('templates'));
     }
 
@@ -698,24 +749,30 @@ class VoucherController extends Controller
         }
 
         VoucherTemplate::create([
+            'user_id' => auth()->id(),
+            'is_system' => false,
             'name' => $request->name,
             'html_content' => $html,
             'css_content' => $css // Optional separate storage
         ]);
+
 
         return back()->with('success', 'Template saved successfully.');
     }
 
     public function deleteTemplate($id)
     {
-        $template = \App\Models\VoucherTemplate::findOrFail($id);
-        
-        if ($template->user_id === null || $template->is_system) {
-            return back()->with('error', 'Default system templates cannot be deleted.');
+        // System templates (files) cannot be deleted through this method
+        if (is_string($id) && str_starts_with($id, 'file:')) {
+            return back()->with('error', 'Template sistem tidak dapat dihapus.');
         }
 
+        $template = \App\Models\VoucherTemplate::where('id', $id)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+        
         $template->delete();
-        return back()->with('success', 'Template deleted successfully.');
+        return back()->with('success', 'Template berhasil dihapus.');
     }
 
     // REPORT LOGIC: Voucher Sold (Detail)
@@ -1075,12 +1132,14 @@ class VoucherController extends Controller
         // Get reseller list for filter
         $resellers = DB::table('customer_members')
             ->where('type', 'Reseller')
+            ->where('user_id', auth()->id())
             ->orderBy('name')
             ->get();
             
-        $templates = \App\Models\VoucherTemplate::orderBy('name')->get();
+        $templates = $this->getTemplates();
             
         return view('vouchers.distribution', compact('distributions', 'batches', 'resellers', 'templates'));
+
     }
     
     public function printBatch(Request $request, $batchId) {
@@ -1094,9 +1153,23 @@ class VoucherController extends Controller
         // Get template from request or fallback
         $template = null;
         $templateId = $request->template_id ?: $vouchers->first()->template_id;
+        
         if ($templateId) {
-            $template = \App\Models\VoucherTemplate::find($templateId);
+            if (is_string($templateId) && str_starts_with($templateId, 'file:')) {
+                $filename = str_replace('file:', '', $templateId);
+                $path = resource_path('views/vouchers/templates/' . $filename);
+                if (File::exists($path)) {
+                    $template = (object)[
+                        'name' => $filename,
+                        'html_content' => File::get($path),
+                        'is_file' => true
+                    ];
+                }
+            } else {
+                $template = \App\Models\VoucherTemplate::find($templateId);
+            }
         }
+
         
         // Get batch info
         $batchInfo = DB::table('billing_history as bh')
@@ -1128,6 +1201,10 @@ class VoucherController extends Controller
     
     // Delete batch
     public function deleteBatch($batchId) {
+        if (auth()->user()->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
+            return response()->json(['success' => false, 'message' => 'Mitra Reseller tidak diizinkan untuk menghapus batch voucher.'], 403);
+        }
+
         $vouchers = BillingHistory::where('batch_id', $batchId)
             ->where('user_id', auth()->id())
             ->get();
@@ -1217,6 +1294,10 @@ class VoucherController extends Controller
     
     // Delete distribution
     public function deleteDistribution(Request $request) {
+        if (auth()->user()->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
+            return response()->json(['success' => false, 'message' => 'Mitra Reseller tidak diizinkan untuk menghapus distribusi voucher.'], 403);
+        }
+
         $resellerId = $request->input('reseller_id');
         $profile = $request->input('profile');
         
@@ -1306,7 +1387,6 @@ class VoucherController extends Controller
                 'message' => 'Status pembayaran berhasil diupdate menjadi Lunas'
             ]);
         }
-        
         return response()->json([
             'success' => false,
             'message' => 'Gagal update status pembayaran'

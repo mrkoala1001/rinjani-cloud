@@ -18,6 +18,14 @@
                 <input type="text" name="name" value="{{ $customer->name }}" class="w-full bg-slate-50 border-none rounded-2xl py-4 flex items-center px-4 font-bold text-slate-700 text-sm focus:ring-2 focus:ring-indigo-500 transition-all" required>
             </div>
             <div>
+                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 ml-1">No. WhatsApp</label>
+                <input type="text" name="whatsapp" value="{{ $customer->whatsapp }}" class="w-full bg-slate-50 border-none rounded-2xl py-4 flex items-center px-4 font-bold text-slate-700 text-sm focus:ring-2 focus:ring-indigo-500 transition-all">
+            </div>
+            <div>
+                <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 ml-1">DNS / Link Login (Hotspot)</label>
+                <input type="text" name="dns" value="{{ $customer->dns }}" placeholder="misal: wifi.net" class="w-full bg-slate-50 border-none rounded-2xl py-4 flex items-center px-4 font-bold text-slate-700 text-sm focus:ring-2 focus:ring-indigo-500 transition-all font-mono">
+            </div>
+            <div>
                 <label class="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 ml-1">Ganti Password App</label>
                 <input type="password" name="app_password" placeholder="Kosongkan jika tidak ingin ganti" class="w-full bg-slate-50 border-none rounded-2xl py-4 flex items-center px-4 font-bold text-slate-700 text-sm focus:ring-2 focus:ring-indigo-500 transition-all">
             </div>

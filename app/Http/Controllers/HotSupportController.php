@@ -209,6 +209,9 @@ class HotSupportController extends Controller
             'whatsapp' => 'nullable|string',
             'notes' => 'nullable|string',
             'role' => 'required|in:mitra,mitra-reseller',
+            'dns' => 'nullable|string',
+            'winbox' => 'nullable|string',
+            'ip_api' => 'nullable|string',
         ]);
 
         User::create([
@@ -222,6 +225,9 @@ class HotSupportController extends Controller
             'whatsapp' => $request->whatsapp,
             'notes' => $request->notes,
             'is_active' => true,
+            'dns' => $request->dns,
+            'winbox' => $request->winbox,
+            'ip_api' => $request->ip_api,
         ]);
 
         return redirect()->route('hotsupport.dashboard')->with('success', 'Mitra berhasil ditambahkan.');
@@ -245,6 +251,9 @@ class HotSupportController extends Controller
             'notes' => 'nullable|string',
             'password' => 'nullable|string|min:4',
             'role' => 'required|in:owner,mitra,mitra-reseller',
+            'dns' => 'nullable|string',
+            'winbox' => 'nullable|string',
+            'ip_api' => 'nullable|string',
         ]);
 
         $owner->name = $request->name;
@@ -253,6 +262,9 @@ class HotSupportController extends Controller
         $owner->whatsapp = $request->whatsapp;
         $owner->notes = $request->notes;
         $owner->role = $request->role;
+        $owner->dns = $request->dns;
+        $owner->winbox = $request->winbox;
+        $owner->ip_api = $request->ip_api;
 
         if ($request->filled('password')) {
             $owner->password = bcrypt($request->password);
@@ -395,6 +407,37 @@ class HotSupportController extends Controller
         ]);
         
         return back()->with('success', 'Berhasil! Saldo ' . $user->name . ' ditambahkan sebesar Rp ' . number_format($request->amount, 0, ',', '.'));
+    }
+
+    public function resetMitraResellerBalance(Request $request)
+    {
+        $request->validate([
+            'reseller_id' => 'required',
+        ]);
+        
+        $user = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->findOrFail($request->reseller_id);
+        
+        $profile = \App\Models\Reseller::where('user_id', $user->id)->first();
+        if (!$profile) {
+            $profile = \App\Models\Reseller::create(['user_id' => $user->id, 'name' => $user->name, 'balance' => 0]);
+        }
+        
+        $before = $profile->balance;
+        $profile->update(['balance' => 0]);
+
+        // Record History
+        \App\Models\BalanceHistory::create([
+            'user_id' => auth()->id(),
+            'customer_id' => $user->id,
+            'type' => 'OUT',
+            'amount' => $before,
+            'before_balance' => $before,
+            'after_balance' => 0,
+            'description' => 'Reset Saldo oleh ISP',
+            'reference_id' => 'RESET-ISP-' . now()->format('YmdHis'),
+        ]);
+        
+        return back()->with('success', 'Berhasil! Saldo ' . $user->name . ' telah direset ke Rp 0.');
     }
 
     public function manageMitraResellerProfiles()
@@ -586,5 +629,118 @@ class HotSupportController extends Controller
         $resellerMap = $resellers->keyBy('id');
         
         return view('hotsupport.mitra_reseller.balance_history', compact('history', 'resellers', 'resellerMap'));
+    }
+
+    public function downloadMitraResellerProfileTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="template_profile_mitra.csv"',
+        ];
+
+        $callback = function() {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['name', 'shared_users', 'rate_limit', 'validity', 'price', 'sell_price']);
+            fputcsv($file, ['1Jam-2000', '1', '1M/1M', '1h', '1000', '2000']);
+            fputcsv($file, ['1Hari-5000', '1', '2M/2M', '1d', '3000', '5000']);
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    public function importMitraResellerProfiles(Request $request, $id)
+    {
+        $user = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->findOrFail($id);
+        
+        $request->validate([
+            'file' => 'required|mimes:csv,txt|max:2048',
+        ]);
+
+        $mkConfig = \App\Models\MikrotikConfig::withoutGlobalScopes()->where('user_id', $user->id)->first();
+        if (!$mkConfig) {
+            return back()->with('error', 'Mitra ini belum memiliki konfigurasi Router.');
+        }
+
+        try {
+            $client = new \RouterOS\Client([
+                'host' => $mkConfig->host,
+                'user' => $mkConfig->user,
+                'pass' => $mkConfig->pass,
+                'port' => (int)($mkConfig->port ?? 8728),
+                'timeout' => 10,
+            ]);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Koneksi Router Gagal: ' . $e->getMessage());
+        }
+
+        $file = $request->file('file');
+        $handle = fopen($file->getRealPath(), 'r');
+        $header = fgetcsv($handle); // skip header
+
+        $successCount = 0;
+        $errorCount = 0;
+
+        while (($row = fgetcsv($handle)) !== FALSE) {
+            if (count($row) < 6) continue;
+
+            $data = [
+                'name' => $row[0],
+                'shared_users' => $row[1],
+                'rate_limit' => $row[2],
+                'validity' => $row[3],
+                'price' => $row[4],
+                'sell_price' => $row[5],
+            ];
+
+            try {
+                // 1. Add to MikroTik
+                $query = new \RouterOS\Query('/ip/hotspot/user/profile/add');
+                $query->add('=name=' . $data['name']);
+                $query->add('=shared-users=' . $data['shared_users']);
+                if ($data['rate_limit']) $query->add('=rate-limit=' . $data['rate_limit']);
+                if ($data['validity']) $query->add('=session-timeout=' . $data['validity']);
+
+                try {
+                    $client->query($query)->read();
+                } catch (\Exception $e) {
+                    if (!str_contains($e->getMessage(), 'already exists')) {
+                        throw $e;
+                    }
+                }
+
+                // 2. Save Metadata (Bypass TenantScope for Mitra)
+                \App\Models\HotspotProfileMetadata::updateOrCreate(
+                    [
+                        'user_id' => $user->id,
+                        'profile_name' => $data['name']
+                    ],
+                    [
+                        'price' => $data['price'],
+                        'selling_price' => $data['sell_price'],
+                        'validity' => $data['validity']
+                    ]
+                );
+                $successCount++;
+            } catch (\Exception $e) {
+                $errorCount++;
+            }
+        }
+
+        fclose($handle);
+        return back()->with('success', "Import selesai. Berhasil: $successCount, Gagal: $errorCount.");
+    }
+
+    public function deleteBalanceHistory($id)
+    {
+        // Only allow if impersonating OR if the user is ISP/Builder
+        if (!session('impersonated_by') && !in_array(auth()->user()->role, ['isp', 'builder'])) {
+            return back()->with('error', 'Anda tidak memiliki akses untuk menghapus riwayat saldo.');
+        }
+
+        $history = \App\Models\BalanceHistory::findOrFail($id);
+        $history->delete();
+
+        return back()->with('success', 'Riwayat mutasi berhasil dihapus.');
     }
 }

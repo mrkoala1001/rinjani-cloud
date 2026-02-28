@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\MikrotikConfig;
 use App\Models\Reseller;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 use RouterOS\Client;
 use RouterOS\Config;
 use Exception;
@@ -17,37 +18,24 @@ class DashboardController extends Controller
         $mkConfig = MikrotikConfig::where('user_id', auth()->id())->first();
         $routerTime = null;
         $routerResources = null;
-        $routerStatus = 'Disconnected';
+        $routerStatus = $mkConfig ? 'Loading...' : 'Disconnected';
         $hotspotActiveCount = 0;
         $totalVoucherCount = 0;
         $pppoeUsersCount = 0;
 
-        // 1. Connection & Time Sync
+        // 1. Connection & Time Sync (Moved to getRouterStatus for Asynchronous loading)
+        // We only check if config exists to show 'Loading' state instead of blocking
         if ($mkConfig) {
-            try {
-                $client = new Client([
-                    'host' => $mkConfig->host,
-                    'user' => $mkConfig->user,
-                    'pass' => $mkConfig->pass,
-                    'port' => (int)($mkConfig->port ?? 8728),
-                    'timeout' => 2,
-                ]);
-
-                $routerStatus = 'Connected';
-                
-                // Fetch Time & Resources
-                $clock = $client->query('/system/clock/print')->read();
-                if (!empty($clock)) $routerTime = $clock[0];
-
-                $resources = $client->query('/system/resource/print')->read();
-                if (!empty($resources)) $routerResources = $resources[0];
-
-                $hotspotActiveCount = count($client->query('/ip/hotspot/active/print')->read());
-                $totalVoucherCount = count($client->query('/ip/hotspot/user/print')->read());
-                $pppoeUsersCount = count($client->query('/ppp/secret/print')->read());
-
-            } catch (Exception $e) {
-                $routerStatus = 'Disconnected';
+            $cacheKey = 'router_stats_' . auth()->id();
+            $cachedValues = Cache::get($cacheKey);
+            
+            if ($cachedValues) {
+                $routerStatus = $cachedValues['routerStatus'];
+                $routerTime = $cachedValues['routerTime'];
+                $routerResources = $cachedValues['routerResources'];
+                $hotspotActiveCount = $cachedValues['hotspotActiveCount'];
+                $totalVoucherCount = $cachedValues['totalVoucherCount'];
+                $pppoeUsersCount = $cachedValues['pppoeUsersCount'];
             }
         }
 
@@ -94,6 +82,17 @@ class DashboardController extends Controller
         // 2. Resellers Count
         $totalResellers = Reseller::count();
 
+        $resellerProfile = null;
+        $recentTopups = [];
+        if (auth()->user()->role === 'mitra-reseller') {
+            $resellerProfile = \App\Models\Reseller::where('user_id', auth()->id())->first();
+            $recentTopups = \App\Models\BalanceHistory::where('customer_id', auth()->id())
+                ->where('type', 'IN')
+                ->latest()
+                ->take(5)
+                ->get();
+        }
+
         return view('dashboard', compact(
             'totalIncome', 
             'voucherRealtime',
@@ -105,7 +104,9 @@ class DashboardController extends Controller
             'pppoeUsersCount', 
             'routerStatus',
             'routerResources',
-            'routerTime'
+            'routerTime',
+            'resellerProfile',
+            'recentTopups'
         ));
     }
 
@@ -125,6 +126,9 @@ class DashboardController extends Controller
             'email' => 'nullable|email|max:255',
             'whatsapp' => 'nullable|string|max:20',
             'location' => 'nullable|string|max:255',
+            'dns' => 'nullable|string|max:255',
+            'winbox' => 'nullable|string|max:255',
+            'ip_api' => 'nullable|string|max:255',
         ]);
 
         $data = [
@@ -133,6 +137,9 @@ class DashboardController extends Controller
             'email' => $request->email,
             'whatsapp' => $request->whatsapp,
             'location' => $request->location,
+            'dns' => $request->dns,
+            'winbox' => $request->winbox,
+            'ip_api' => $request->ip_api,
         ];
 
         if ($request->filled('password')) {
@@ -214,5 +221,47 @@ class DashboardController extends Controller
         ]);
 
         return back()->with('success', 'Notification marked as read.');
+    }
+
+    public function getRouterStatus()
+    {
+        $mkConfig = MikrotikConfig::where('user_id', auth()->id())->first();
+        if (!$mkConfig) {
+            return response()->json(['routerStatus' => 'Disconnected']);
+        }
+
+        $cacheKey = 'router_stats_' . auth()->id();
+        $cachedValues = Cache::remember($cacheKey, 120, function() use ($mkConfig) {
+            try {
+                $client = new Client([
+                    'host' => $mkConfig->host,
+                    'user' => $mkConfig->user,
+                    'pass' => $mkConfig->pass,
+                    'port' => (int)($mkConfig->port ?? 8728),
+                    'timeout' => 5, // A bit longer for API
+                ]);
+
+                return [
+                    'routerStatus' => 'Connected',
+                    'routerTime' => $client->query('/system/clock/print')->read()[0] ?? null,
+                    'routerResources' => $client->query('/system/resource/print')->read()[0] ?? null,
+                    'hotspotActiveCount' => count($client->query('/ip/hotspot/active/print')->read()),
+                    'totalVoucherCount' => count($client->query('/ip/hotspot/user/print')->read()),
+                    'pppoeUsersCount' => count($client->query('/ppp/secret/print')->read()),
+                ];
+            } catch (Exception $e) {
+                return [
+                    'routerStatus' => 'Disconnected',
+                    'routerTime' => null,
+                    'routerResources' => null,
+                    'hotspotActiveCount' => 0,
+                    'totalVoucherCount' => 0,
+                    'pppoeUsersCount' => 0,
+                    'error' => $e->getMessage()
+                ];
+            }
+        });
+
+        return response()->json($cachedValues);
     }
 }

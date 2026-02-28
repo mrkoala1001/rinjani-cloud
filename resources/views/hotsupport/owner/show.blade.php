@@ -29,6 +29,9 @@
         <p class="text-gray-600 mb-1"><i class="fas fa-map-marker-alt mr-2 w-5"></i> {{ $owner->location ?? 'Belum ada lokasi' }}</p>
         <p class="text-gray-600 mb-1"><i class="fas fa-key mr-2 w-5"></i> Password: <span class="italic text-xs text-gray-400">Encrypted</span></p>
         <p class="text-gray-600 mb-1"><i class="fas fa-network-wired mr-2 w-5"></i> IP: {{ $owner->mikrotikConfigs->first()?->host ?? '-' }}</p>
+        <p class="text-gray-600 mb-1"><i class="fas fa-link mr-2 w-5"></i> DNS: <a href="http://{{ $owner->dns }}" target="_blank" class="text-blue-600 hover:underline">{{ $owner->dns ?? '-' }}</a></p>
+        <p class="text-gray-600 mb-1"><i class="fas fa-desktop mr-2 w-5"></i> Winbox: <span class="font-mono bg-gray-100 px-1 rounded">{{ $owner->winbox ?? '-' }}</span></p>
+        <p class="text-gray-600 mb-1"><i class="fas fa-server mr-2 w-5"></i> IP API: <span class="font-mono bg-gray-100 px-1 rounded">{{ $owner->ip_api ?? '-' }}</span></p>
         <p class="text-gray-600 mt-2 text-xs italic"><i class="fas fa-sticky-note mr-2 w-5"></i> Notes: {{ $owner->notes ?? '-' }}</p>
     </div>
 

@@ -66,6 +66,27 @@
             </div>
         </div>
 
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="dns">
+                    DNS / Link Login
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="dns" type="text" name="dns" placeholder="Contoh: hotpot.net">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="winbox">
+                    Winbox
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="winbox" type="text" name="winbox" placeholder="Contoh: id1.vpn.app:5555">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="ip_api">
+                    IP API
+                </label>
+                <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="ip_api" type="text" name="ip_api" placeholder="Contoh: 192.168.1.1">
+            </div>
+        </div>
+
         <div class="mb-6">
             <label class="block text-gray-700 text-sm font-bold mb-2" for="notes">
                 Catatan

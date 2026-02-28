@@ -23,6 +23,21 @@ class SettingController extends Controller
             'use_radius' => 'nullable|boolean',
         ]);
         
+        $host = $validated['host'];
+        $port = $validated['port'] ?? 8728;
+
+        // Cek apakah kombinasi Host + Port ini sudah digunakan oleh user lain
+        $exists = MikrotikConfig::where('host', $host)
+            ->where('port', $port)
+            ->where('user_id', '!=', auth()->id())
+            ->exists();
+
+        if ($exists) {
+            return redirect()->back()
+                ->with('error', "❌ Gagal! Jaringan MikroTik dengan Host: {$host} dan Port: {$port} sudah terdaftar di akun lain.")
+                ->withInput();
+        }
+
         $validated['use_radius'] = $request->has('use_radius');
         $validated['user_id'] = auth()->id();
         

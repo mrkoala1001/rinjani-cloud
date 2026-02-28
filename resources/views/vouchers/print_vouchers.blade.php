@@ -183,7 +183,7 @@
             @if($template && $template->html_content)
                 {{-- Use template if available --}}
                 @php
-                    $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://hotspot.mikhmon/login?username={$voucher->username}&password={$voucher->password}";
+                    $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" . urlencode("http://" . (auth()->user()->dns ?? 'hotspot.net') . "/login?username={$voucher->username}&password={$voucher->password}");
                     
                     $replacements = [
                         '{{username}}' => $voucher->username,
@@ -194,12 +194,14 @@
                         '{{profile}}' => $voucher->profile,
                         '{{qrcode}}' => "<img src='{$qrUrl}' class='qrcode'>",
                         '{{server}}' => $voucher->server ?? 'all',
-                        '{{reseller}}' => $batchInfo->reseller_name ?? 'Admin',
+                        '{{reseller}}' => $batchInfo->reseller_name ?? auth()->user()->name,
                         '{{comment}}' => $voucher->comment ?? '',
                         '{{timelimit}}' => !empty($voucher->timelimit) ? $voucher->timelimit : '-',
-                        '{{datalimit}}' => !empty($voucher->validity) ? $voucher->validity : '-', // Instruction: replace datalimit with validity
-                        '{{hotspotname}}' => !empty($voucher->hotspotname) ? $voucher->hotspotname : 'HOTSPOT',
-                        '{{cs_number}}' => auth()->user()->whatsapp ?? auth()->user()->phone ?? '0817200386',
+                        '{{datalimit}}' => !empty($voucher->validity) ? $voucher->validity : '-', 
+                        '{{hotspotname}}' => auth()->user()->name ?? 'HOTSPOT',
+                        '{{login_link}}' => auth()->user()->dns ?? 'hotspot.net',
+                        '{{wa_number}}' => auth()->user()->whatsapp ?? '0817200386',
+                        '{{cs_number}}' => auth()->user()->whatsapp ?? '0817200386',
                     ];
                     
                     $html = str_replace(array_keys($replacements), array_values($replacements), $template->html_content);
@@ -207,47 +209,48 @@
                 {!! $html !!}
             @else
                 {{-- Default voucher card - Professional --}}
-                <div class="voucher-card" style="width:260px; border-radius:12px; border:2px solid #cbd5e1; overflow:hidden; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align:left; padding:0; background:#fff; position:relative; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
+                <div class="voucher-card" style="width:260px; border-radius:12px; border:2px solid #334155; overflow:hidden; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align:left; padding:0; background:#fff; position:relative; box-shadow:0 4px 6px rgba(0,0,0,0.05);">
                     <!-- Header -->
-                    <div style="background:#0f172a; color:white; padding:12px 10px; text-align:center;">
-                        <div style="font-size:16px; font-weight:900; letter-spacing:1px; text-transform:uppercase; text-shadow:1px 1px 2px rgba(0,0,0,0.5);">{{ !empty($voucher->hotspotname) ? $voucher->hotspotname : (auth()->user()->name ?? 'HOTSPOT') }}</div>
+                    <div style="background:#1e293b; color:white; padding:12px 10px; text-align:center;">
+                        <div style="font-size:16px; font-weight:900; letter-spacing:1px; text-transform:uppercase;">{{ auth()->user()->name ?? 'HOTSPOT' }}</div>
                     </div>
                     
                     <!-- Content -->
                     <div style="padding:15px; display:flex; gap:12px; align-items:center;">
                         @php
-                            $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=".urlencode("http://hotspot.mikhmon/login?username={$voucher->username}&password={$voucher->password}");
+                            $dns = auth()->user()->dns ?? 'hotspot.net';
+                            $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=0&data=".urlencode("http://".$dns."/login?username={$voucher->username}&password={$voucher->password}");
                         @endphp
-                        <img src="{{ $qrUrl }}" style="width:75px; height:75px; border-radius:6px; border:1px solid #e2e8f0; padding:2px; background:#fff;">
+                        <img src="{{ $qrUrl }}" style="width:80px; height:80px; border-radius:6px; border:1px solid #e2e8f0; padding:2px; background:#fff;">
                         <div style="flex:1;">
-                            <div style="font-size:9px; color:#64748b; text-transform:uppercase; font-weight:bold; letter-spacing:0.5px;">Kode Login / Username</div>
-                            <div style="font-size:18px; font-weight:900; color:#0f172a; letter-spacing:1px; line-height:1.2;">{{ $voucher->username }}</div>
+                            <div style="font-size:9px; color:#64748b; text-transform:uppercase; font-weight:bold;">USERNAME / KODE</div>
+                            <div style="font-size:18px; font-weight:900; color:#0f172a; letter-spacing:1px;">{{ $voucher->username }}</div>
                             
-                            <div style="font-size:9px; color:#64748b; margin-top:6px; text-transform:uppercase; font-weight:bold; letter-spacing:0.5px;">Password</div>
-                            <div style="font-size:14px; font-weight:bold; color:#334155; line-height:1.2;">{{ $voucher->password }}</div>
+                            <div style="font-size:9px; color:#64748b; margin-top:6px; text-transform:uppercase; font-weight:bold;">PASSWORD</div>
+                            <div style="font-size:14px; font-weight:bold; color:#334155;">{{ $voucher->password }}</div>
                         </div>
                     </div>
                     
                     <!-- Details Box -->
-                    <div style="padding:10px 15px; background:#f8fafc; border-top:1px dashed #cbd5e1; border-bottom:1px dashed #cbd5e1; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="padding:10px 15px; background:#f1f5f9; border-top:1px dashed #cbd5e1; border-bottom:1px dashed #cbd5e1; display:flex; justify-content:space-between; align-items:center;">
                         <div>
-                            <div style="font-size:13px; font-weight:900; color:#ef4444;">Rp {{ number_format($voucher->selling_price ?? $voucher->price, 0, ',', '.') }}</div>
-                            <div style="font-size:10px; font-weight:bold; color:#334155; margin-top:2px;">{{ $voucher->profile }}</div>
+                            <div style="font-size:13px; font-weight:900; color:#dc2626;">Rp {{ number_format($voucher->selling_price ?? $voucher->price, 0, ',', '.') }}</div>
+                            <div style="font-size:10px; font-weight:bold; color:#475569; margin-top:2px;">{{ $voucher->profile }}</div>
                         </div>
                         <div style="text-align:right;">
                             <div style="font-size:10px; color:#475569;"><span style="font-weight:bold;">Aktif:</span> {{ !empty($voucher->validity) ? $voucher->validity : '-' }}</div>
-                            <div style="font-size:10px; color:#475569; margin-top:2px;"><span style="font-weight:bold;">Waktu:</span> {{ !empty($voucher->timelimit) ? $voucher->timelimit : 'Unlim' }}</div>
+                            <div style="font-size:10px; color:#475569; margin-top:2px;"><span style="font-weight:bold;">Sesi:</span> {{ !empty($voucher->timelimit) ? $voucher->timelimit : 'Unlim' }}</div>
                         </div>
                     </div>
                     
                     <!-- Footer -->
                     <div style="padding:12px 15px; text-align:center; background:#fff;">
                         <div style="font-size:11px; color:#1e293b; font-weight:bold; margin-bottom:5px;">
-                            Login Link: <span style="color:#2563eb;">hotspot.mikhmon</span>
+                            Link Login: <span style="color:#2563eb;">{{ auth()->user()->dns ?? 'hotspot.net' }}</span>
                         </div>
                         <div style="font-size:9px; color:#94a3b8; font-weight:600;">
-                            Dicetak/Reseller: <span style="color:#64748b;">{{ $batchInfo->reseller_name ?? 'Admin' }}</span><br>
-                            Komplain/CS: <span style="color:#64748b;">{{ auth()->user()->whatsapp ?? auth()->user()->phone ?? '0817200386' }}</span>
+                            Reseller: <span style="color:#64748b;">{{ $batchInfo->reseller_name ?? auth()->user()->name }}</span><br>
+                            CS/WA: <span style="color:#64748b;">{{ auth()->user()->whatsapp ?? '0817200386' }}</span>
                         </div>
                     </div>
                 </div>

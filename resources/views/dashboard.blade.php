@@ -38,6 +38,30 @@
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        @if(auth()->user()->role === 'mitra-reseller')
+            <!-- Mitra-Reseller Wallet -->
+            <div class="bg-violet-600 rounded-2xl shadow-sm p-6 border border-violet-700 hover:shadow-md transition group text-white relative overflow-hidden">
+                <!-- Watermark -->
+                <div class="absolute -right-2 -bottom-4 opacity-20 text-7xl pointer-events-none group-hover:scale-110 transition-transform duration-500">
+                    <i class="fas fa-wallet"></i>
+                </div>
+                
+                <div class="relative z-10 flex items-start sm:items-center mb-4 sm:flex-row flex-col">
+                    <div class="p-3 rounded-xl bg-white/20 text-white shadow-inner group-hover:scale-110 transition backdrop-blur-sm mb-3 sm:mb-0 sm:mr-4 flex-shrink-0">
+                        <i class="fas fa-wallet fa-lg"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-[10px] text-violet-100 font-bold uppercase tracking-widest leading-snug">SALDO MITRA ANDA</p>
+                    </div>
+                </div>
+                <div class="relative z-10">
+                    <p class="text-2xl sm:text-3xl font-black" style="word-break: break-word;">
+                        Rp {{ number_format($resellerProfile ? $resellerProfile->balance : 0, 0, ',', '.') }}
+                    </p>
+                </div>
+            </div>
+        @endif
+
         <!-- Card 1: Voucher Realtime -->
         <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-200 hover:shadow-md transition group">
             <div class="flex items-center mb-4">
@@ -110,28 +134,35 @@
         <div class="mb-8 p-4 bg-slate-50 rounded-xl border border-slate-100">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="w-3 h-3 rounded-full {{ $routerStatus == 'Connected' ? 'bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]' : 'bg-red-500' }}"></div>
+                    <div class="w-3 h-3 rounded-full" :class="{
+                        'bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]': stats.routerStatus === 'Connected',
+                        'bg-red-500': stats.routerStatus === 'Disconnected',
+                        'bg-amber-400 animate-pulse': stats.routerStatus === 'Loading...'
+                    }"></div>
                     <span class="text-sm font-bold text-slate-700">MikroTik Connection: </span>
-                    <span class="text-sm font-black uppercase tracking-wider {{ $routerStatus == 'Connected' ? 'text-green-600' : 'text-red-600' }}">{{ $routerStatus }}</span>
+                    <span class="text-sm font-black uppercase tracking-wider" :class="{
+                        'text-green-600': stats.routerStatus === 'Connected',
+                        'text-red-600': stats.routerStatus === 'Disconnected',
+                        'text-amber-600': stats.routerStatus === 'Loading...'
+                    }" x-text="stats.routerStatus"></span>
                 </div>
-                @if($routerStatus == 'Disconnected')
+                <template x-if="stats.routerStatus === 'Disconnected'">
                     <a href="{{ route('settings') }}" class="text-xs font-black text-blue-600 hover:text-blue-800 uppercase tracking-widest flex items-center gap-1 group">
                         Configure Now <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform font-normal"></i>
                     </a>
-                @endif
+                </template>
             </div>
         </div>
         
-        @if($routerStatus == 'Connected')
+        <template x-if="stats.routerStatus === 'Connected' || stats.routerStatus === 'Loading...'">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <!-- Router Resources -->
-                @if($routerResources)
                 <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
                     <div class="absolute -right-4 -bottom-4 text-slate-50 text-8xl transition-transform group-hover:scale-110">
                         <i class="fas fa-microchip"></i>
                     </div>
                     <h4 class="font-black text-slate-400 mb-5 text-[10px] uppercase tracking-widest border-b border-slate-50 pb-2">Resource Hardware</h4>
-                    <div class="space-y-4 relative z-10">
+                    <div class="space-y-4 relative z-10" :class="stats.routerStatus === 'Loading...' ? 'opacity-50 pointer-events-none' : ''">
                         <div class="flex justify-between items-center bg-slate-50/50 p-2 rounded-lg">
                             <span class="text-sm font-bold text-slate-500">Board Name</span>
                             <span class="text-sm font-black text-slate-800" x-text="stats.boardName"></span>
@@ -161,16 +192,14 @@
                         </div>
                     </div>
                 </div>
-                @endif
                 
                 <!-- Time Server -->
-                @if($routerTime)
                 <div class="bg-slate-900 rounded-2xl p-6 shadow-xl text-white relative overflow-hidden group">
                     <div class="absolute -right-4 -bottom-4 text-white/5 text-8xl transition-transform group-hover:scale-110">
                         <i class="fas fa-clock"></i>
                     </div>
                     <h4 class="font-black text-blue-400 mb-5 text-[10px] uppercase tracking-widest border-b border-white/10 pb-2">Router Time Info</h4>
-                    <div class="space-y-4 relative z-10">
+                    <div class="space-y-4 relative z-10" :class="stats.routerStatus === 'Loading...' ? 'opacity-50 pointer-events-none' : ''">
                         <div class="flex justify-between items-center bg-white/5 p-2 rounded-lg">
                             <span class="text-sm font-bold text-slate-400">Date</span>
                             <span class="text-sm font-black" x-text="stats.date"></span>
@@ -185,9 +214,9 @@
                         </div>
                     </div>
                 </div>
-                @endif
             </div>
-        @else
+        </template>
+        <template x-if="stats.routerStatus === 'Disconnected'">
             <div class="bg-rose-50 border border-rose-100 rounded-2xl p-6 flex flex-col items-center text-center gap-3">
                 <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mb-2">
                     <i class="fas fa-exclamation-triangle text-xl"></i>
@@ -200,7 +229,7 @@
                     Update Settings
                 </a>
             </div>
-        @endif
+        </template>
     </div>
 </div>
 
@@ -216,6 +245,35 @@
                 setInterval(() => {
                     this.updateTime()
                 }, 1000);
+
+                // Asynchronous Router Status Fetch
+                if (this.stats.routerStatus === 'Loading...' || !this.stats.boardName || this.stats.boardName === '-') {
+                    fetch('{{ route("api.router-status") }}')
+                        .then(response => response.json())
+                        .then(data => {
+                            this.stats.routerStatus = data.routerStatus;
+                            this.stats.hotspotActive = data.hotspotActiveCount;
+                            this.stats.totalVoucher = data.totalVoucherCount;
+                            
+                            if (data.routerResources) {
+                                this.stats.cpuLoad = data.routerResources['cpu-load'];
+                                this.stats.freeMemory = (data.routerResources['free-memory'] / 1024 / 1024).toFixed(2);
+                                this.stats.uptime = data.routerResources['uptime'];
+                                this.stats.boardName = data.routerResources['board-name'];
+                                this.stats.version = data.routerResources['version'];
+                            }
+                            
+                            if (data.routerTime) {
+                                this.stats.time = data.routerTime.time;
+                                this.stats.date = data.routerTime.date;
+                                this.stats.timeZone = data.routerTime['time-zone-name'];
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching router status:', error);
+                            this.stats.routerStatus = 'Disconnected';
+                        });
+                }
 
                 if (typeof Echo !== 'undefined') {
                     Echo.channel('dashboard-stats.{{ auth()->id() }}')

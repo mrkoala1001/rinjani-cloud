@@ -68,11 +68,13 @@
                                    title="Lihat Detail">
                                     <i class="fas fa-eye"></i>
                                 </a>
+                                @if(auth()->user()->role !== 'mitra-reseller' || session()->has('impersonated_by'))
                                 <button onclick="deleteBatch('{{ $batch->batch_id }}')" 
                                         class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold transition inline-flex items-center"
                                         title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -160,11 +162,13 @@
                                    title="Lihat Detail">
                                     <i class="fas fa-eye"></i>
                                 </a>
+                                @if(auth()->user()->role !== 'mitra-reseller' || session()->has('impersonated_by'))
                                 <button onclick="deleteDistribution({{ $dist->reseller_id }}, '{{ $dist->profile }}')" 
                                         class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs font-bold transition inline-flex items-center"
                                         title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
+                                @endif
                                 @if($dist->payment_status != 'paid')
                                 <button onclick="markPaid({{ $dist->reseller_id }}, '{{ $dist->profile }}')" 
                                         class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs font-bold transition inline-flex items-center"

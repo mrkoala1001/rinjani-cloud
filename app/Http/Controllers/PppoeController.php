@@ -37,6 +37,25 @@ class PppoeController extends Controller
         if ($client) {
             try {
                 $active = $client->query('/ppp/active/print')->read();
+                $secrets = $client->query('/ppp/secret/print')->read();
+                
+                // Map secrets by name for quick lookup
+                $secretMap = [];
+                foreach ($secrets as $secret) {
+                    if (isset($secret['name'])) {
+                        $secretMap[$secret['name']] = $secret['profile'] ?? '-';
+                    }
+                }
+
+                // Add profile to active users
+                foreach ($active as &$session) {
+                    if (isset($session['name']) && isset($secretMap[$session['name']])) {
+                        $session['profile'] = $secretMap[$session['name']];
+                    } else {
+                        $session['profile'] = '-';
+                    }
+                }
+
                 $routerStatus = 'Connected';
             } catch (Exception $e) {
                 $routerStatus = 'Error: ' . $e->getMessage();

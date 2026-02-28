@@ -112,6 +112,11 @@
                         </div>
                     </div>
 
+                    <a href="{{ route('profile') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('profile') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                        <i class="fas fa-user-circle mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                        <span class="font-medium">My Profile</span>
+                    </a>
+
                 @elseif(auth()->check() && in_array(auth()->user()->role, ['owner', 'mitra', 'mitra-reseller']))
                     <!-- Owner / Mitra Menu -->
                     <a href="{{ route('dashboard') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('dashboard') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
@@ -164,6 +169,11 @@
                             <a href="{{ route('owner.reseller.balance') }}" class="block py-2 px-3 rounded-md text-sm font-bold border-t border-slate-700/50 mt-1 pt-2 transition duration-200 hover:bg-slate-700 {{ request()->routeIs('owner.reseller.balance') ? 'bg-orange-600 text-white shadow-md' : 'text-orange-400 hover:text-white' }}">
                                 <i class="fas fa-wallet mr-1"></i> {{ auth()->user()->role === 'mitra-reseller' ? 'Isi Saldo' : 'Manage Saldo' }}
                             </a>
+                            @if(auth()->user()->role === 'mitra-reseller')
+                            <a href="{{ route('owner.reseller.history') }}" class="block py-2 px-3 rounded-md text-sm font-bold transition duration-200 hover:bg-slate-700 {{ request()->routeIs('owner.reseller.history') ? 'bg-orange-600 text-white shadow-md' : 'text-orange-400 hover:text-white' }}">
+                                <i class="fas fa-file-invoice-dollar mr-1"></i> Riwayat Saldo
+                            </a>
+                            @endif
                         </div>
                     </div>
 
@@ -247,6 +257,10 @@
                         <i class="fas fa-history mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
                         <span class="font-medium">My Reports</span>
                     </a>
+                    <a href="{{ route('profile') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('profile') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                        <i class="fas fa-user-circle mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                        <span class="font-medium">My Profile</span>
+                    </a>
                 @elseif(auth()->check() && auth()->user()->role === 'builder')
                      <div class="px-4 mb-4 text-[10px] font-bold text-blue-400 tracking-widest text-center border-b border-slate-800 pb-2">
                         KOALA BUILDER
@@ -277,6 +291,10 @@
                         <i class="fas fa-book mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
                         <span class="font-medium">Documentation</span>
                     </a>
+                    <a href="{{ route('profile') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('profile') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                        <i class="fas fa-user-circle mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                        <span class="font-medium">My Profile</span>
+                    </a>
 @elseif(auth()->check() && auth()->user()->role === 'reseller')
                     <!-- Reseller Menu -->
                     <a href="{{ route('reseller.dashboard') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('reseller.dashboard') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
@@ -304,9 +322,18 @@
                         <span class="font-medium">Tambah Saldo</span>
                     </a>
                     
+                    <a href="{{ route('reseller.balance.history') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('reseller.balance.history') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                        <i class="fas fa-file-invoice-dollar mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                        <span class="font-medium">Riwayat Saldo</span>
+                    </a>
+                    
                     <a href="{{ route('report.form') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('report.form') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                         <i class="fas fa-paper-plane mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
                         <span class="font-medium">Report to Mr. Koala</span>
+                    </a>
+                    <a href="{{ route('profile') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('profile') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                        <i class="fas fa-user-circle mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                        <span class="font-medium">My Profile</span>
                     </a>
                 @endif
 
@@ -353,27 +380,38 @@
                     @php
                         $broadcasts = collect();
                         $unreadTickets = collect();
-                        if(auth()->check() && auth()->user()->role !== 'builder') {
-                            $readBroadcastIds = \Illuminate\Support\Facades\DB::table('broadcast_reads')
-                                ->where('user_id', auth()->id())
-                                ->pluck('broadcast_id');
+                        $recentTopups = collect();
+                        if(auth()->check()) {
+                            if(auth()->user()->role !== 'builder') {
+                                $readBroadcastIds = \Illuminate\Support\Facades\DB::table('broadcast_reads')
+                                    ->where('user_id', auth()->id())
+                                    ->pluck('broadcast_id');
 
-                            $broadcasts = \App\Models\Broadcast::where('is_active', true)
-                                ->whereNotIn('id', $readBroadcastIds)
-                                ->latest()
-                                ->get();
-                                
-                            $unreadTickets = \App\Models\Report::where('sender_id', auth()->id())
-                                ->where('sender_type', get_class(auth()->user()))
-                                ->where('user_unread', true)
-                                ->latest('updated_at')
-                                ->get();
+                                $broadcasts = \App\Models\Broadcast::where('is_active', true)
+                                    ->whereNotIn('id', $readBroadcastIds)
+                                    ->latest()
+                                    ->get();
+                                    
+                                $unreadTickets = \App\Models\Report::where('sender_id', auth()->id())
+                                    ->where('sender_type', get_class(auth()->user()))
+                                    ->where('user_unread', true)
+                                    ->latest('updated_at')
+                                    ->get();
+                            }
+                            
+                            if(auth()->user()->role === 'mitra-reseller' || auth()->user()->role === 'reseller') {
+                                $recentTopups = \App\Models\BalanceHistory::where('customer_id', auth()->id())
+                                    ->where('type', 'IN')
+                                    ->latest()
+                                    ->take(3)
+                                    ->get();
+                            }
                         }
                     @endphp
                     
                     <div x-data="{ 
                             open: false, 
-                            hasUnread: {{ ($broadcasts->count() > 0 || $unreadTickets->count() > 0) ? 'true' : 'false' }} 
+                            hasUnread: {{ ($broadcasts->count() > 0 || $unreadTickets->count() > 0 || $recentTopups->count() > 0) ? 'true' : 'false' }} 
                         }" 
                         class="relative">
                         <button @click="open = !open; hasUnread = false" class="bg-gray-100 p-2 rounded-full text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition relative focus:outline-none">
@@ -386,7 +424,7 @@
                         <div x-show="open" @click.away="open = false" x-cloak x-transition:enter="transition ease-out duration-100" x-transition:enter-start="transform opacity-0 scale-95" x-transition:enter-end="transform opacity-100 scale-100" x-transition:leave="transition ease-in duration-75" x-transition:leave-start="transform opacity-100 scale-100" x-transition:leave-end="transform opacity-0 scale-95" class="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-slate-100 z-50 overflow-hidden">
                             <div class="px-4 py-3 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
                                 <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Notifications</h3>
-                                <span class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-full">{{ $broadcasts->count() + $unreadTickets->count() }} Active</span>
+                                <span class="bg-blue-100 text-blue-600 text-[10px] font-bold px-2 py-0.5 rounded-full">{{ $broadcasts->count() + $unreadTickets->count() + $recentTopups->count() }} Active</span>
                             </div>
                             <div class="max-h-80 overflow-y-auto p-2 space-y-2">
                                 
@@ -451,13 +489,31 @@
                                         </div>
                                     </div>
                                 @empty
-                                    @if($unreadTickets->isEmpty())
+                                @endforelse
+
+                                @forelse($recentTopups as $topup)
+                                    <div class="p-3 rounded-lg border flex items-start gap-3 bg-green-50 border-green-100 group hover:bg-green-100 transition">
+                                        <div class="flex-shrink-0 mt-0.5">
+                                            <i class="fas fa-wallet text-green-500"></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <h4 class="text-xs font-bold text-slate-800">Saldo Masuk</h4>
+                                            <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">Rp {{ number_format($topup->amount, 0, ',', '.') }} - {{ $topup->description ?? 'Topup Saldo oleh ISP' }}</p>
+                                            <div class="flex justify-between items-center mt-1.5">
+                                                <span class="text-[9px] text-slate-400 font-bold text-green-600">{{ $topup->created_at->diffForHumans() }}</span>
+                                                <span class="text-[9px] text-slate-400">Ref: {{ $topup->reference_id }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                @endforelse
+
+                                @if($unreadTickets->isEmpty() && $broadcasts->isEmpty() && $recentTopups->isEmpty())
                                     <div class="p-8 text-center text-slate-400">
                                         <i class="fas fa-bell-slash text-2xl mb-2 opacity-50"></i>
-                                        <p class="text-xs">No active broadcasts</p>
+                                        <p class="text-xs">No active notifications</p>
                                     </div>
-                                    @endif
-                                @endforelse
+                                @endif
                             </div>
                         </div>
                     </div>

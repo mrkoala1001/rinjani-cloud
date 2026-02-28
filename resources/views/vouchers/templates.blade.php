@@ -17,14 +17,18 @@
         <div class="bg-white rounded-lg shadow border border-gray-200 overflow-hidden hover:shadow-lg transition relative group">
             <div class="bg-gray-50 px-4 py-2 border-b flex justify-between items-center">
                 <span class="text-xs font-bold text-gray-500 uppercase tracking-tighter">
-                    @if($tpl->is_system)
-                        <span class="text-indigo-600"><i class="fas fa-shield-alt mr-1"></i>System Template</span>
+                    @if(isset($tpl->is_system) && $tpl->is_system)
+                        <span class="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                            <i class="fas fa-shield-alt mr-1"></i>System
+                        </span>
                     @else
-                        Template
+                        <span class="text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                            <i class="fas fa-user-edit mr-1"></i>User Template
+                        </span>
                     @endif
                 </span>
-                @if(!$tpl->is_system)
-                <a href="{{ route('voucher.deleteTemplate', $tpl->id) }}" class="text-red-400 hover:text-red-600 transition" onclick="return confirm('Hapus template?')">
+                @if(!(isset($tpl->is_system) && $tpl->is_system))
+                <a href="{{ route('voucher.deleteTemplate', $tpl->id) }}" class="text-red-400 hover:text-red-600 transition p-1 hover:bg-red-50 rounded" onclick="return confirm('Hapus template ini?')">
                     <i class="fas fa-trash-alt text-[10px]"></i>
                 </a>
                 @endif
@@ -63,7 +67,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Template Code (HTML + CSS)</label>
-                    <p class="text-[10px] text-gray-500 mb-2">Supported placeholders: @{{username}}, @{{password}}, @{{price}}, @{{validity}}, @{{profile}}, @{{qrcode}}, @{{server}}, @{{reseller}}, @{{comment}}</p>
+                    <p class="text-[10px] text-gray-500 mb-2">Supported placeholders: @{{username}}, @{{password}}, @{{price}}, @{{validity}}, @{{profile}}, @{{qrcode}}, @{{reseller}}, @{{hotspotname}}, @{{login_link}}, @{{wa_number}}</p>
                     <textarea name="html_content" rows="15" class="w-full border rounded px-3 py-2 text-xs font-mono bg-gray-900 text-green-400 focus:outline-none" 
 placeholder="<style>
 .card { border: 1px solid black; padding: 5px; width: 200px; text-align: center; }
