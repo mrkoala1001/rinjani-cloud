@@ -26,14 +26,16 @@
             <p class="text-sm text-gray-500">Total Profiles: <span class="font-bold text-blue-600" x-text="profiles.length"></span></p>
         </div>
         <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-             <div class="relative w-full md:w-64">
+            <div class="relative w-full md:w-64">
                 <input type="text" x-model="search" placeholder="Cari Profile..." 
                        class="w-full pl-10 pr-4 py-2 border rounded shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
                 <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
             </div>
+            @if (auth()->user()->role !== 'mitra-reseller')
             <button @click="showModal = true" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition text-sm flex items-center justify-center">
                 <i class="fas fa-plus mr-2"></i>Add Profile
             </button>
+            @endif
         </div>
     </div>
 
@@ -47,8 +49,7 @@
                         <th class="px-4 py-2 text-left font-bold">Local Address</th>
                         <th class="px-4 py-2 text-left font-bold">Remote Address</th>
                         <th class="px-4 py-2 text-left font-bold">Rate Limit</th>
-                        <th class="px-4 py-2 text-left font-bold">DNS Server</th>
-                        <th class="px-4 py-2 text-left font-bold">Comment</th>
+                        <th class="px-4 py-2 text-left font-bold">Pricing (Price / Sell)</th>
                         <th class="px-4 py-2 text-center font-bold w-24">Act</th>
                     </tr>
                 </thead>
@@ -59,8 +60,17 @@
                              <td class="px-4 py-2 text-gray-600 font-mono" x-text="p['local-address'] || '-'"></td>
                              <td class="px-4 py-2 text-gray-600 font-mono" x-text="p['remote-address'] || '-'"></td>
                              <td class="px-4 py-2 text-blue-600 font-mono" x-text="p['rate-limit'] || '-'"></td>
-                             <td class="px-4 py-2 text-gray-600 font-mono" x-text="p['dns-server'] || '-'"></td>
-                             <td class="px-4 py-2 text-gray-500 italic text-xs" x-text="p.comment || '-'"></td>
+                             <td class="px-4 py-2">
+                                 <template x-if="p.local_metadata">
+                                     <div class="flex flex-col">
+                                         <span class="text-slate-800 font-bold" x-text="'Rp ' + Number(p.local_metadata.price).toLocaleString()"></span>
+                                         <span class="text-green-600 font-bold" x-text="'Rp ' + Number(p.local_metadata.selling_price).toLocaleString()"></span>
+                                     </div>
+                                 </template>
+                                 <template x-if="!p.local_metadata">
+                                     <span class="text-gray-400">No Prices Set</span>
+                                 </template>
+                             </td>
                              <td class="px-4 py-2 text-center">
                                 <button @click="viewData = p; viewModalOpen = true" class="text-blue-500 hover:text-blue-700 mx-1" title="View Details">
                                     <i class="fas fa-eye text-sm"></i>
@@ -137,9 +147,13 @@
                                         <input type="text" name="rate_limit" placeholder="1M/2M" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-mono font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none transition-all">
                                     </div>
                                     <div>
-                                        <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">DNS Server</label>
-                                        <input type="text" name="dns_server" placeholder="8.8.8.8" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-mono font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none transition-all">
+                                        <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Price (Reseller)</label>
+                                        <input type="number" name="price" placeholder="10000" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none transition-all">
                                     </div>
+                                </div>
+                                <div>
+                                    <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Selling Price (User)</label>
+                                    <input type="number" name="selling_price" placeholder="15000" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none transition-all">
                                 </div>
                             </div>
                         </div>
@@ -194,6 +208,10 @@
                             <div class="flex justify-between items-center border-b border-slate-200/50 pb-3">
                                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rate Limit</span>
                                 <span class="text-blue-600 font-mono" x-text="viewData['rate-limit'] || '-'"></span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-slate-200/50 pb-3" x-show="viewData.local_metadata">
+                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Price (Price / Sell)</span>
+                                <span class="text-slate-700" x-text="viewData.local_metadata ? 'Rp ' + Number(viewData.local_metadata.price).toLocaleString() + ' / Rp ' + Number(viewData.local_metadata.selling_price).toLocaleString() : '-'"></span>
                             </div>
                             <div class="flex justify-between items-center border-b border-slate-200/50 pb-3">
                                 <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">DNS Server</span>
@@ -260,9 +278,13 @@
                                         <input type="text" name="rate_limit" x-model="editData['rate-limit']" placeholder="1M/2M" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-mono font-bold text-slate-800 focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 focus:outline-none transition-all">
                                     </div>
                                     <div>
-                                        <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">DNS Server</label>
-                                        <input type="text" name="dns_server" x-model="editData['dns-server']" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-mono font-bold text-slate-800 focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 focus:outline-none transition-all">
+                                        <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Price (Reseller)</label>
+                                        <input type="number" name="price" x-model="editData.local_metadata.price" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 focus:outline-none transition-all">
                                     </div>
+                                </div>
+                                <div>
+                                    <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Selling Price (User)</label>
+                                    <input type="number" name="selling_price" x-model="editData.local_metadata.selling_price" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-yellow-500/10 focus:border-yellow-500 focus:outline-none transition-all">
                                 </div>
                                 <div>
                                     <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Comment</label>

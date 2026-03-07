@@ -25,34 +25,10 @@
             summaryTotal: { total: 0, count: 0 },
 
             init() {
-                // 1. Caching Summary Stats
-                const cachedSummary = localStorage.getItem('cache_billing_summary');
-                if (cachedSummary) {
-                    const cache = JSON.parse(cachedSummary);
-                    this.summaryToday = cache.today;
-                    this.summaryMonth = cache.month;
-                    this.summaryTotal = cache.total;
-                } else {
-                    this.summaryToday = @js($summaryToday);
-                    this.summaryMonth = @js($summaryMonth);
-                    this.summaryTotal = @js($summaryTotal);
-                }
-
-                // Update cache with fresh server data
-                localStorage.setItem('cache_billing_summary', JSON.stringify({
-                    today: @js($summaryToday),
-                    month: @js($summaryMonth),
-                    total: @js($summaryTotal)
-                }));
-
-                // 2. Caching Customer Dropdown Data (Large)
-                const cachedCustomers = localStorage.getItem('cache_customer_select');
-                if (cachedCustomers) {
-                    this.customers = JSON.parse(cachedCustomers);
-                } else {
-                    this.customers = @js($customers->map(function($c) { return ['id' => $c->id, 'name' => $c->name, 'bill_amount' => $c->bill_amount, 'location' => $c->location]; }));
-                    localStorage.setItem('cache_customer_select', JSON.stringify(this.customers));
-                }
+                this.summaryToday = @js($summaryToday);
+                this.summaryMonth = @js($summaryMonth);
+                this.summaryTotal = @js($summaryTotal);
+                this.customers = @js($customers->map(function($c) { return ['id' => $c->id, 'name' => $c->name, 'bill_amount' => $c->bill_amount, 'location' => $c->location]; }));
             },
 
             selectedCustomer: null,

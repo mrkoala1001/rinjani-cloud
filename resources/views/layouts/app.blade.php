@@ -107,7 +107,10 @@
                                 Riwayat Saldo
                             </a>
                             <a href="{{ route('hotsupport.mitra-reseller.profiles') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('hotsupport.mitra-reseller.profiles') || request()->routeIs('hotsupport.mitra-reseller.profiles.*') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
-                                Manage Profile
+                                Manage Profile (Voucher)
+                            </a>
+                            <a href="{{ route('hotsupport.mitra-reseller.pppoe-profiles') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('hotsupport.mitra-reseller.pppoe-profiles') || request()->routeIs('hotsupport.mitra-reseller.pppoe-profiles.*') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                                Manage Profile (PPPoE)
                             </a>
                         </div>
                     </div>
@@ -198,6 +201,12 @@
                             </a>
                         </div>
                     </div>
+
+                    <!-- WAN-IP STATIC Section -->
+                    <a href="{{ route('wan-static.index') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('wan-static.*') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                        <i class="fas fa-microchip mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                        <span class="font-medium">WAN-IP STATIC</span>
+                    </a>
 
                     <!-- Pelanggan Section -->
                     <div x-data="{ open: {{ request()->routeIs('customer.*') ? 'true' : 'false' }} }" class="space-y-1">

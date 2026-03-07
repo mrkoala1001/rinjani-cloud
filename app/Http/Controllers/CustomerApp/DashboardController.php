@@ -11,10 +11,11 @@ use App\Models\BillingHistory;
 use App\Models\User;
 use App\Models\HotspotProfileMetadata;
 use App\Traits\VoucherTemplateHelpers;
+use App\Traits\RouterosTimeHelpers;
 
 class DashboardController extends Controller
 {
-    use VoucherTemplateHelpers;
+    use VoucherTemplateHelpers, RouterosTimeHelpers;
 
     public function showLogin()
     {
@@ -133,18 +134,32 @@ class DashboardController extends Controller
             ->where('profile_name', $profileName)
             ->first();
             
-        if (!$meta) return back()->with('error', 'Profile tidak ditemukan pada router owner.');
-
         $totalCost = $meta->price * $qty;
-
         if ($customer->balance < $totalCost) {
-            return back()->with('error', 'Saldo tidak mencukupi. Saldo: Rp ' . number_format($customer->balance) . ', Dibutuhkan: Rp ' . number_format($totalCost));
+            return back()->with('error', 'Saldo tidak mencukupi. Saldo: Rp ' . number_format($customer->balance) . ', Dibutuhkan: Rp ' . number_format($totalCost))->withInput();
+        }
+
+        // CHECK TIMELIMIT (Cannot exceed Validity)
+        if ($timeLimit) {
+            $limitSeconds = $this->parseRouterOSTime($timeLimit);
+            $validitySeconds = $this->parseRouterOSTime($meta->validity);
+            
+            if ($limitSeconds > $validitySeconds && $validitySeconds > 0) {
+                return back()->with('error', "Limit Waktu ({$timeLimit}) tidak boleh melebihi Masa Aktif Profil ({$meta->validity}).")->withInput();
+            }
         }
 
         $owner = User::find($customer->user_id);
         $mkConfig = $owner->mikrotikConfigs->first();
         if (!$mkConfig) return back()->with('error', 'Konfigurasi router owner belum tersedia.');
 
+        // ATOMIC LOCK: Prevent duplicate submissions within 30 seconds
+        $lockKey = 'c-v-gen-lock-' . $customerId;
+        if (\Illuminate\Support\Facades\Cache::has($lockKey)) {
+            return back()->with('error', 'Proses generate sedang berjalan. Mohon tunggu sebentar.')->withInput();
+        }
+        \Illuminate\Support\Facades\Cache::put($lockKey, true, 30); // Lock for 30s
+        
         try {
             $client = new \RouterOS\Client([
                 'host' => $mkConfig->host,
@@ -222,6 +237,8 @@ class DashboardController extends Controller
 
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal: ' . $e->getMessage());
+        } finally {
+            \Illuminate\Support\Facades\Cache::forget($lockKey);
         }
     }
 

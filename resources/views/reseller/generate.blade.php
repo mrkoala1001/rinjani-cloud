@@ -47,7 +47,7 @@
                     <span class="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-[10px] font-black uppercase tracking-widest">Reseller Mode</span>
                 </div>
                 
-                <form action="{{ route('voucher.store') }}" method="POST" class="p-8">
+                <form id="resellerVoucherForm" action="{{ route('voucher.store') }}" method="POST" class="p-8">
                     @csrf
                     <input type="hidden" name="reseller_id" value="{{ auth()->id() }}">
                     
@@ -130,9 +130,15 @@
                     </div>
 
                     <div class="border-t border-slate-100 pt-8">
-                        <button type="submit" class="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-3 text-lg">
-                            <i class="fas fa-play"></i>
-                            GENERATE SEKARANG
+                        <button type="submit" id="btnSubmit" class="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-3 text-lg">
+                            <span id="btnText" class="flex items-center justify-center gap-3">
+                                <i class="fas fa-play"></i>
+                                GENERATE SEKARANG
+                            </span>
+                            <span id="btnLoading" class="hidden items-center justify-center gap-3">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                SEDANG MEMPROSES...
+                            </span>
                         </button>
                     </div>
                 </form>
@@ -196,5 +202,134 @@
 <style>
     [x-cloak] { display: none !important; }
 </style>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+    <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl text-center max-w-sm w-full mx-4 border border-indigo-100 animate-in zoom-in duration-300">
+        <div class="relative w-24 h-24 mx-auto mb-8">
+            <div class="absolute inset-0 rounded-full border-4 border-indigo-100"></div>
+            <div class="absolute inset-0 rounded-full border-4 border-t-indigo-600 animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <i class="fas fa-bolt text-indigo-600 text-3xl"></i>
+            </div>
+        </div>
+        
+        <h3 class="text-2xl font-black text-slate-900 mb-3">Membuat Voucher</h3>
+        <p class="text-xs text-slate-500 font-bold uppercase tracking-widest leading-relaxed mb-8">
+            Jangan tutup atau refresh halaman ini. Sistem sedang mendaftarkan voucher ke MikroTik Anda.
+        </p>
+        
+        <div class="pt-6 border-t border-slate-100">
+            <div class="bg-indigo-50 rounded-2xl p-4 flex items-center gap-4 text-left">
+                <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shrink-0">
+                    <i class="fas fa-info-circle text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Informasi</p>
+                    <p class="text-[10px] text-indigo-400 font-bold leading-tight">Untuk jumlah banyak, proses ini mungkin memakan waktu hingga 1 menit.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        let isSubmitting = false;
+        const form = document.getElementById('resellerVoucherForm');
+        
+        // Helper to parse RouterOS time to seconds (JS version)
+        function parseToSeconds(time) {
+            if (!time || time === '-') return 0;
+            time = time.toLowerCase().trim();
+            
+            // Colon format hh:mm:ss
+            if (time.includes(':')) {
+                const parts = time.split(':');
+                if (parts.length === 3) return (parseInt(parts[0]) * 3600) + (parseInt(parts[1]) * 60) + parseInt(parts[2]);
+                if (parts.length === 2) return (parseInt(parts[0]) * 60) + parseInt(parts[1]);
+            }
+
+            let seconds = 0;
+            const matches = time.matchAll(/(\d+)([wdhms])/g);
+            let hasMatch = false;
+            for (const match of matches) {
+                hasMatch = true;
+                const val = parseInt(match[1]);
+                const unit = match[2];
+                switch (unit) {
+                    case 'w': seconds += val * 604800; break;
+                    case 'd': seconds += val * 86400; break;
+                    case 'h': seconds += val * 3600; break;
+                    case 'm': seconds += val * 60; break;
+                    case 's': seconds += val; break;
+                }
+            }
+            return hasMatch ? seconds : (parseInt(time) || 0);
+        }
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (isSubmitting) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+
+                const qtyInput = form.querySelector('input[name=qty]');
+                const profileSelect = form.querySelector('select[name=profile]');
+                const timeLimitInput = form.querySelector('input[name=timelimit]');
+                
+                // Basic validation
+                if (!profileSelect.value || parseInt(qtyInput.value) <= 0) {
+                    return;
+                }
+
+                // CHECK TIMELIMIT VS VALIDITY
+                if (timeLimitInput && timeLimitInput.value) {
+                    const timeLimitSec = parseToSeconds(timeLimitInput.value);
+                    
+                    // Get validity from profiles data
+                    const profiles = {{ json_encode($profiles) }};
+                    const selectedProf = profiles.find(p => p.name === profileSelect.value);
+                    const validity = selectedProf && selectedProf.local_metadata ? selectedProf.local_metadata.validity : '';
+                    
+                    if (validity) {
+                        const validitySec = parseToSeconds(validity);
+                        if (timeLimitSec > validitySec && validitySec > 0) {
+                            alert('⚠️ Limit Waktu (' + timeLimitInput.value + ') tidak boleh melebihi Masa Aktif Profil (' + validity + ')!');
+                            e.preventDefault();
+                            return false;
+                        }
+                    }
+                }
+
+                isSubmitting = true;
+                
+                // Disable everything
+                const btn = document.getElementById('btnSubmit');
+                const btnText = document.getElementById('btnText');
+                const btnLoading = document.getElementById('btnLoading');
+                
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'pointer-events-none');
+                btnText.classList.add('hidden');
+                btnLoading.classList.remove('hidden');
+                btnLoading.classList.add('flex');
+
+                // Show unclosable overlay
+                const overlay = document.getElementById('loadingOverlay');
+                overlay.classList.remove('hidden');
+                overlay.style.pointerEvents = 'auto'; // Block clicks through overlay
+                
+                // Extra safety: block all pointer events on body
+                document.body.style.pointerEvents = 'none';
+                overlay.style.pointerEvents = 'auto'; // except the overlay (though not needed)
+                
+                return true;
+            });
+        }
+    })();
+</script>
 @endsection
 

@@ -18,7 +18,7 @@
                 <div class="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
                     <h3 class="font-bold text-gray-700"><i class="fas fa-magic mr-2"></i>Voucher Generator</h3>
                 </div>
-                <form action="{{ route('voucher.store') }}" method="POST" class="p-4 space-y-4">
+                <form id="voucherForm" action="{{ route('voucher.store') }}" method="POST" class="p-4 space-y-4">
                     @csrf
                     
                     @if ($errors->any())
@@ -130,8 +130,8 @@
                         </div>
                     </div>
 
-                    <!-- Reseller (Only for Admin/ISP) -->
-                    @if(auth()->user()->role !== 'mitra-reseller')
+                    <!-- Reseller (Only for Management Roles) -->
+                    @if(in_array(auth()->user()->role, ['owner', 'mitra', 'mitra-reseller', 'isp', 'builder']))
                     <div class="pt-2">
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-2">Ditujukan untuk Reseller</label>
                         <select name="reseller_id" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none bg-white">
@@ -149,8 +149,8 @@
                         <span id="btnText" class="flex items-center justify-center gap-2">
                             <i class="fas fa-bolt text-yellow-300"></i> GENERATE VOUCHER
                         </span>
-                        <span id="btnLoading" class="hidden">
-                            <i class="fas fa-spinner fa-spin mr-2"></i>SEDANG BERKOMUNIKASI DENGAN MIKROTIK...
+                        <span id="btnLoading" class="hidden items-center justify-center gap-2">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>SEDANG MEMPROSES...
                         </span>
                     </button>
                 </form>
@@ -236,29 +236,133 @@
     </div>
 </div>
 
-<!-- Modal / Overlay Loading sama dengan sebelumnya -->
-<div id="loadingOverlay" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-    <div class="bg-white p-8 rounded-2xl shadow-2xl text-center max-w-sm w-full mx-4 border border-blue-100">
-        <div class="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-blue-600 mx-auto mb-6"></div>
-        <h3 class="text-2xl font-black text-slate-800 mb-2">Memproses Voucher</h3>
-        <p class="text-sm text-slate-500 font-bold">Mohon tunggu sebentar, sistem sedang mendaftarkan voucher ke dalam Router MikroTik Anda.</p>
-        <div class="mt-8 pt-4 border-t border-slate-100">
-             <p class="text-[10px] text-red-500 font-black uppercase tracking-widest">Peringatan!</p>
-             <p class="text-[10px] text-slate-400 font-bold italic mt-1 uppercase">Jangan segarkan (refresh) atau tutup halaman ini sampai proses selesai.</p>
+<!-- Modal / Overlay Loading -->
+<div id="loadingOverlay" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+    <div class="bg-white p-8 md:p-12 rounded-[2.5rem] shadow-2xl text-center max-w-sm w-full mx-4 border border-blue-100 animate-in zoom-in duration-300">
+        <div class="relative w-24 h-24 mx-auto mb-8">
+            <div class="absolute inset-0 rounded-full border-4 border-blue-100"></div>
+            <div class="absolute inset-0 rounded-full border-4 border-t-blue-600 animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <i class="fas fa-magic text-blue-600 text-3xl"></i>
+            </div>
+        </div>
+        
+        <h3 class="text-2xl font-black text-slate-800 mb-3">Memproses Voucher</h3>
+        <p class="text-[11px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed mb-8">
+            Jangan tutup atau refresh halaman ini. Sistem sedang mendaftarkan voucher ke dalam Router MikroTik Anda.
+        </p>
+        
+        <div class="pt-6 border-t border-slate-100">
+            <div class="bg-blue-50 rounded-2xl p-4 flex items-center gap-4 text-left">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shrink-0 shadow-lg shadow-blue-200">
+                    <i class="fas fa-info-circle text-white"></i>
+                </div>
+                <div>
+                    <p class="text-[10px] font-black text-blue-600 uppercase tracking-widest">Peringatan Penting</p>
+                    <p class="text-[10px] text-blue-400 font-bold leading-tight">Untuk jumlah besar (seperti 500+ voucher), proses ini dapat memakan waktu beberapa menit.</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    document.querySelector('form').addEventListener('submit', function() {
-        document.getElementById('loadingOverlay').classList.remove('hidden');
-        const btn = document.getElementById('btnSubmit');
-        const btnText = document.getElementById('btnText');
-        const btnLoading = document.getElementById('btnLoading');
-        btn.disabled = true;
-        btnText.classList.add('hidden');
-        btnLoading.classList.remove('hidden');
-    });
+    (function() {
+        let isSubmitting = false;
+        const form = document.getElementById('voucherForm');
+        
+        // Helper to parse RouterOS time to seconds (JS version)
+        function parseToSeconds(time) {
+            if (!time || time === '-') return 0;
+            time = time.toLowerCase().trim();
+            
+            // Colon format hh:mm:ss
+            if (time.includes(':')) {
+                const parts = time.split(':');
+                if (parts.length === 3) return (parseInt(parts[0]) * 3600) + (parseInt(parts[1]) * 60) + parseInt(parts[2]);
+                if (parts.length === 2) return (parseInt(parts[0]) * 60) + parseInt(parts[1]);
+            }
+
+            let seconds = 0;
+            const matches = time.matchAll(/(\d+)([wdhms])/g);
+            let hasMatch = false;
+            for (const match of matches) {
+                hasMatch = true;
+                const val = parseInt(match[1]);
+                const unit = match[2];
+                switch (unit) {
+                    case 'w': seconds += val * 604800; break;
+                    case 'd': seconds += val * 86400; break;
+                    case 'h': seconds += val * 3600; break;
+                    case 'm': seconds += val * 60; break;
+                    case 's': seconds += val; break;
+                }
+            }
+            return hasMatch ? seconds : (parseInt(time) || 0);
+        }
+
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (isSubmitting) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return false;
+                }
+
+                const qtyInput = form.querySelector('input[name=qty]');
+                const profileSelect = form.querySelector('select[name=profile]');
+                const timeLimitInput = form.querySelector('input[name=timelimit]');
+                
+                // Basic validation
+                if (!profileSelect.value || parseInt(qtyInput.value) <= 0) {
+                    return;
+                }
+
+                // CHECK TIMELIMIT VS VALIDITY
+                if (timeLimitInput && timeLimitInput.value) {
+                    const timeLimitSec = parseToSeconds(timeLimitInput.value);
+                    
+                    // Get validity from profiles data (injected via Alpine/Blade)
+                    const profiles = {{ json_encode($profiles) }};
+                    const selectedProf = profiles.find(p => p.name === profileSelect.value);
+                    const validity = selectedProf && selectedProf.local_metadata ? selectedProf.local_metadata.validity : '';
+                    
+                    if (validity) {
+                        const validitySec = parseToSeconds(validity);
+                        if (timeLimitSec > validitySec && validitySec > 0) {
+                            alert('⚠️ Limit Waktu (' + timeLimitInput.value + ') tidak boleh melebihi Masa Aktif Profil (' + validity + ')!');
+                            e.preventDefault();
+                            return false;
+                        }
+                    }
+                }
+
+                isSubmitting = true;
+                
+                // Disable everything
+                const btn = document.getElementById('btnSubmit');
+                const btnText = document.getElementById('btnText');
+                const btnLoading = document.getElementById('btnLoading');
+                
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'pointer-events-none');
+                btnText.classList.add('hidden');
+                btnLoading.classList.remove('hidden');
+                btnLoading.classList.add('flex');
+
+                // Show unclosable overlay
+                const overlay = document.getElementById('loadingOverlay');
+                overlay.classList.remove('hidden');
+                overlay.style.pointerEvents = 'auto'; // Block clicks through overlay
+                
+                // Extra safety: block all pointer events on body
+                document.body.style.pointerEvents = 'none';
+                overlay.style.pointerEvents = 'auto'; // except the overlay (though not needed)
+                
+                return true;
+            });
+        }
+    })();
 </script>
 @endsection
 

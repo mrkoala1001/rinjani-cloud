@@ -14,10 +14,11 @@ use RouterOS\Query;
 use Exception;
 use Illuminate\Support\Facades\File;
 use App\Traits\VoucherTemplateHelpers;
+use App\Traits\RouterosTimeHelpers;
 
 class VoucherController extends Controller
 {
-    use VoucherTemplateHelpers;
+    use VoucherTemplateHelpers, RouterosTimeHelpers;
 
     private function getClient($timeout = 10)
     {
@@ -75,8 +76,11 @@ class VoucherController extends Controller
 
     public function generate(Request $request)
     {
-        // Fetch resellers from CustomerMember table (type = 'Reseller')
-        $resellers = \App\Models\CustomerMember::where('type', 'Reseller')->orderBy('name')->get();
+        // Fetch resellers from CustomerMember table (type = 'RESELLER')
+        $resellers = \App\Models\CustomerMember::where('type', 'RESELLER')
+            ->where('user_id', auth()->id())
+            ->orderBy('name')
+            ->get();
         $templates = $this->getTemplates();
 
         $profiles = [];
@@ -134,14 +138,22 @@ class VoucherController extends Controller
         ini_set('memory_limit', '512M');
 
         $request->validate([
-            'qty' => 'required|integer|min:1|max:1000', // Increased limit to 1000 since we use chunks
+            'qty' => 'required|integer|min:1|max:1000',
             'server' => 'required',
             'user_mode' => 'required|in:up,u+p',
             'user_length' => 'required|integer|min:3|max:12',
             'profile' => 'required',
         ]);
 
-        $qty = (int)$request->qty;
+        // ATOMIC LOCK: Prevent duplicate submissions within 30 seconds
+        $lockKey = 'v-gen-lock-' . auth()->id();
+        if (\Illuminate\Support\Facades\Cache::has($lockKey)) {
+            return back()->with('error', 'Proses generate sedang berjalan. Mohon tunggu sebentar.')->withInput();
+        }
+        \Illuminate\Support\Facades\Cache::put($lockKey, true, 30); // Lock for 30s
+        
+        try {
+            $qty = (int)$request->qty;
         $server = $request->input('server', 'all');
         $userMode = $request->user_mode;
         $userLength = (int)$request->user_length;
@@ -164,7 +176,9 @@ class VoucherController extends Controller
         // Get Reseller Name
         $resellerName = 'Admin';
         if ($resellerId) {
-            $reseller = \App\Models\CustomerMember::find($resellerId);
+            $reseller = \App\Models\CustomerMember::where('id', $resellerId)
+                ->where('user_id', auth()->id())
+                ->first();
             if ($reseller) $resellerName = $reseller->name;
         }
 
@@ -176,6 +190,17 @@ class VoucherController extends Controller
         $validity = $meta ? $meta->validity : '-';
         $sellingPrice = $meta ? $meta->selling_price : $price;
         $dnsName = 'hotspot.mikhmon'; 
+        
+        // CHECK TIMELIMIT (Cannot exceed Validity)
+        if ($timeLimit) {
+            $limitSeconds = $this->parseRouterOSTime($timeLimit);
+            $validitySeconds = $this->parseRouterOSTime($validity);
+            
+            if ($limitSeconds > $validitySeconds && $validitySeconds > 0) {
+                return back()->with('error', "Limit Waktu ({$timeLimit}) tidak boleh melebihi Masa Aktif Profil ({$validity}).")->withInput();
+            }
+        }
+
         $batchId = 'BATCH-' . now()->format('YmdHis') . '-' . strtoupper(substr(md5(uniqid()), 0, 6));
 
         // Balance Check for mitra-reseller
@@ -283,8 +308,11 @@ class VoucherController extends Controller
             }
         }
 
-        return redirect()->route('voucher.distribution')
-            ->with('success', "Voucher {$batchId} sejumlah {$totalProcessed} Berhasil di generate");
+            return redirect()->route('voucher.distribution')
+                ->with('success', "Voucher {$batchId} sejumlah {$totalProcessed} Berhasil di generate");
+        } finally {
+            \Illuminate\Support\Facades\Cache::forget($lockKey);
+        }
     }
 
     // --- Voucher List Module ---
@@ -1103,7 +1131,7 @@ class VoucherController extends Controller
                 DB::raw('MAX(bh.paid_at) as paid_at')
             )
             ->whereNotNull('bh.reseller_id')
-            ->where('cm.type', 'Reseller')
+            ->where('cm.type', 'RESELLER')
             ->where('bh.user_id', auth()->id()) // SECURITY FIX
             ->groupBy('bh.reseller_id', 'cm.name', 'bh.profile', 'pm.price', 'bh.price')
             ->orderBy('cm.name')
@@ -1131,7 +1159,7 @@ class VoucherController extends Controller
         
         // Get reseller list for filter
         $resellers = DB::table('customer_members')
-            ->where('type', 'Reseller')
+            ->where('type', 'RESELLER')
             ->where('user_id', auth()->id())
             ->orderBy('name')
             ->get();

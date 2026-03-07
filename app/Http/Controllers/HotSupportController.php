@@ -743,4 +743,178 @@ class HotSupportController extends Controller
 
         return back()->with('success', 'Riwayat mutasi berhasil dihapus.');
     }
+
+    // --- Mitra Reseller PPPoE Profile Management ---
+
+    public function manageMitraResellerPppoeProfiles()
+    {
+        $resellers = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->paginate(10);
+        return view('hotsupport.mitra_reseller.pppoe_profiles_list', compact('resellers'));
+    }
+
+    public function viewMitraResellerPppoeProfiles($id)
+    {
+        $user = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->findOrFail($id);
+        
+        $mkConfig = \App\Models\MikrotikConfig::withoutGlobalScopes()->where('user_id', $user->id)->first();
+        $profiles = [];
+        
+        if ($mkConfig) {
+            try {
+                $client = new \RouterOS\Client([
+                    'host' => $mkConfig->host,
+                    'user' => $mkConfig->user,
+                    'pass' => $mkConfig->pass,
+                    'port' => (int)($mkConfig->port ?? 8728),
+                    'timeout' => 5,
+                ]);
+                $profiles = $client->query('/ppp/profile/print')->read();
+                
+                foreach ($profiles as &$prof) {
+                    $meta = \App\Models\PppoeProfileMetadata::withoutGlobalScopes()
+                                ->where('user_id', $user->id)
+                                ->where('profile_name', $prof['name'])->first();
+                    $prof['local_metadata'] = $meta;
+                }
+            } catch (\Exception $e) {
+                session()->flash('error', 'RouterOS Error: ' . $e->getMessage());
+            }
+        } else {
+            session()->flash('error', 'Mitra (Reseller) ini belum memiliki konfigurasi Router.');
+        }
+
+        return view('hotsupport.mitra_reseller.pppoe_profiles_show', compact('user', 'profiles'));
+    }
+
+    public function storeMitraResellerPppoeProfile(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required',
+        ]);
+        
+        $user = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->findOrFail($id);
+        $mkConfig = \App\Models\MikrotikConfig::withoutGlobalScopes()->where('user_id', $user->id)->first();
+        
+        if (!$mkConfig) return back()->with('error', 'Konfigurasi MikroTik tidak ditemukan.');
+        
+        try {
+            $client = new \RouterOS\Client([
+                'host' => $mkConfig->host,
+                'user' => $mkConfig->user,
+                'pass' => $mkConfig->pass,
+                'port' => (int)($mkConfig->port ?? 8728)
+            ]);
+            $query = new \RouterOS\Query('/ppp/profile/add');
+            $query->add('=name=' . $request->name);
+            
+            if ($request->local_address) $query->add('=local-address=' . $request->local_address);
+            if ($request->remote_address) $query->add('=remote-address=' . $request->remote_address);
+            if ($request->rate_limit) $query->add('=rate-limit=' . $request->rate_limit);
+            if ($request->dns_server) $query->add('=dns-server=' . $request->dns_server);
+            
+            try {
+                $client->query($query)->read();
+            } catch (\Exception $e) {
+                if (!str_contains($e->getMessage(), 'Undefined array key')) throw $e;
+            }
+            
+            \App\Models\PppoeProfileMetadata::withoutGlobalScopes()->updateOrCreate(
+                ['user_id' => $user->id, 'profile_name' => $request->name],
+                [
+                    'price' => $request->price ?? 0,
+                    'selling_price' => $request->sell_price ?? 0
+                ]
+            );
+            
+            return back()->with('success', 'Profile PPPoE berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menambahkan profile: ' . $e->getMessage());
+        }
+    }
+
+    public function updateMitraResellerPppoeProfile(Request $request, $id) 
+    {
+        $request->validate([
+            'mk_id' => 'required',
+            'name' => 'required',
+        ]);
+        
+        $user = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->findOrFail($id);
+        $mkConfig = \App\Models\MikrotikConfig::withoutGlobalScopes()->where('user_id', $user->id)->first();
+        
+        if (!$mkConfig) return back()->with('error', 'Konfigurasi MikroTik tidak ditemukan.');
+        
+        try {
+            $client = new \RouterOS\Client([
+                'host' => $mkConfig->host,
+                'user' => $mkConfig->user,
+                'pass' => $mkConfig->pass,
+                'port' => (int)($mkConfig->port ?? 8728)
+            ]);
+            $query = new \RouterOS\Query('/ppp/profile/set');
+            $query->add('=.id=' . $request->mk_id);
+            if ($request->name) $query->add('=name=' . $request->name);
+            
+            if ($request->local_address) $query->add('=local-address=' . $request->local_address);
+            if ($request->remote_address) $query->add('=remote-address=' . $request->remote_address);
+            if ($request->rate_limit) $query->add('=rate-limit=' . $request->rate_limit);
+            if ($request->dns_server) $query->add('=dns-server=' . $request->dns_server);
+            
+            try {
+                $client->query($query)->read();
+            } catch (\Exception $e) {
+                if (!str_contains($e->getMessage(), 'Undefined array key')) throw $e;
+            }
+            
+            \App\Models\PppoeProfileMetadata::withoutGlobalScopes()->updateOrCreate(
+                ['user_id' => $user->id, 'profile_name' => $request->name],
+                [
+                    'price' => $request->price ?? 0,
+                    'selling_price' => $request->sell_price ?? 0
+                ]
+            );
+            
+            return back()->with('success', 'Profile PPPoE berhasil diupdate.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mengupdate profile: ' . $e->getMessage());
+        }
+    }
+
+    public function deleteMitraResellerPppoeProfile(Request $request, $id)
+    {
+        $mk_id = $request->query('mk_id');
+        $name = $request->query('name');
+        
+        $user = User::where('role', 'mitra-reseller')->where('created_by', auth()->id())->findOrFail($id);
+        $mkConfig = \App\Models\MikrotikConfig::withoutGlobalScopes()->where('user_id', $user->id)->first();
+        
+        if (!$mkConfig) return back()->with('error', 'Konfigurasi MikroTik tidak ditemukan.');
+        
+        try {
+            $client = new \RouterOS\Client([
+                'host' => $mkConfig->host,
+                'user' => $mkConfig->user,
+                'pass' => $mkConfig->pass,
+                'port' => (int)($mkConfig->port ?? 8728)
+            ]);
+            $query = new \RouterOS\Query('/ppp/profile/remove');
+            $query->add('=.id=' . $mk_id);
+            
+            try {
+                $client->query($query)->read();
+            } catch (\Exception $e) {
+                if (!str_contains($e->getMessage(), 'Undefined array key')) throw $e;
+            }
+            
+            if ($name) {
+                \App\Models\PppoeProfileMetadata::withoutGlobalScopes()
+                    ->where('user_id', $user->id)
+                    ->where('profile_name', $name)->delete();
+            }
+            
+            return back()->with('success', 'Profile PPPoE berhasil dihapus.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal menghapus profile: ' . $e->getMessage());
+        }
+    }
 }

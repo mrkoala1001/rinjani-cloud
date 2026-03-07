@@ -204,6 +204,40 @@ class BillingController extends Controller
         return $pdf->download("Laporan_Keuangan_Hotpot_{$startDate}_sampai_{$endDate}.pdf");
     }
 
+    public function closePeriod(Request $request) {
+        $startDate = $request->get('start_date');
+        $endDate = $request->get('end_date');
+        $password = $request->get('confirm_password');
+
+        // Optional: Verifikasi password untuk keamanan ekstra jika diinginkan
+        // Di sini saya asumsikan user mengonfirmasi lewat form.
+        
+        if (!$startDate || !$endDate) {
+            return redirect()->back()->with('error', 'Pilih rentang tanggal periode yang akan ditutup.');
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Hapus Pemasukan
+            Income::whereBetween('date', [$startDate, $endDate])->delete();
+
+            // 2. Hapus Pengeluaran
+            Expense::whereBetween('date', [$startDate, $endDate])->delete();
+
+            // 3. BillingHistory (Voucher Sales) TIIDAK DIHAPUS sesuai permintaan
+            // Agar stok voucher distribusi reseller tetap aman.
+
+            DB::commit();
+
+            return redirect()->route('billing.monitor')->with('success', "Periode $startDate s/d $endDate telah berhasil ditutup. Seluruh riwayat transaksi telah dibersihkan.");
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal menutup buku: ' . $e->getMessage());
+        }
+    }
+
     public function income(Request $request) {
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');

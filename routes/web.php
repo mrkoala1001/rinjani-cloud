@@ -9,6 +9,7 @@ use App\Http\Controllers\PppoeController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\WanStaticController;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HotSupportController;
@@ -167,6 +168,13 @@ Route::domain('hotpot.depootcom.com')->group(function () {
              Route::get('/mitra-reseller/profiles-template', [HotSupportController::class, 'downloadMitraResellerProfileTemplate'])->name('mitra-reseller.profiles.template');
              Route::post('/mitra-reseller/profiles/{id}/import', [HotSupportController::class, 'importMitraResellerProfiles'])->name('mitra-reseller.profiles.import');
 
+             // Mitra-Reseller PPPoE Profile management
+             Route::get('/mitra-reseller/pppoe-profiles', [HotSupportController::class, 'manageMitraResellerPppoeProfiles'])->name('mitra-reseller.pppoe-profiles');
+             Route::get('/mitra-reseller/pppoe-profiles/{id}', [HotSupportController::class, 'viewMitraResellerPppoeProfiles'])->name('mitra-reseller.pppoe-profiles.show');
+             Route::post('/mitra-reseller/pppoe-profiles/{id}', [HotSupportController::class, 'storeMitraResellerPppoeProfile'])->name('mitra-reseller.pppoe-profiles.store');
+             Route::post('/mitra-reseller/pppoe-profiles/{id}/update', [HotSupportController::class, 'updateMitraResellerPppoeProfile'])->name('mitra-reseller.pppoe-profiles.update');
+             Route::get('/mitra-reseller/pppoe-profiles/{id}/delete', [HotSupportController::class, 'deleteMitraResellerPppoeProfile'])->name('mitra-reseller.pppoe-profiles.delete');
+
              // Report & Ticketing System
              Route::get('/tickets', [HotSupportController::class, 'ticketIndex'])->name('tickets.index');
              Route::get('/tickets/{id}', [HotSupportController::class, 'ticketShow'])->name('tickets.show');
@@ -239,6 +247,14 @@ Route::domain('hotpot.depootcom.com')->group(function () {
                 Route::get('/secrets/delete/{id}', [PppoeController::class, 'deleteSecret'])->name('deleteSecret');
             });
 
+            // WAN-IP STATIC Routes (Simple Queues)
+            Route::prefix('wan-static')->name('wan-static.')->group(function () {
+                Route::get('/', [WanStaticController::class, 'index'])->name('index');
+                Route::post('/', [WanStaticController::class, 'store'])->name('store');
+                Route::post('/update', [WanStaticController::class, 'update'])->name('update');
+                Route::get('/delete/{id}', [WanStaticController::class, 'destroy'])->name('destroy');
+            });
+
             // Customer Routes
             Route::prefix('customer')->name('customer.')->group(function () {
                 Route::get('/list/{type?}', [CustomerController::class, 'list'])->name('list');
@@ -251,6 +267,7 @@ Route::domain('hotpot.depootcom.com')->group(function () {
                 Route::get('/', [BillingController::class, 'index'])->name('index');
                 Route::get('/monitor', [BillingController::class, 'monitor'])->name('monitor');
                 Route::get('/monitor/export-pdf', [BillingController::class, 'exportMonitorPdf'])->name('monitor.exportPdf');
+                Route::post('/monitor/close', [BillingController::class, 'closePeriod'])->name('monitor.closePeriod');
                 Route::get('/income', [BillingController::class, 'income'])->name('income');
                 Route::get('/income/export', [BillingController::class, 'exportIncome'])->name('income.export');
                 Route::get('/income/sync', [BillingController::class, 'sync'])->name('syncIncome');

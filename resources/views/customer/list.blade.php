@@ -12,21 +12,8 @@
     isLoading: false,
     customers: [],
     
-    // Logic Cache
     init() {
-        // 1. Coba ambil dari Cache dulu agar instan
-        const cachedData = localStorage.getItem('cache_customers_{{ $type }}');
-        if (cachedData && !this.search) {
-            this.customers = JSON.parse(cachedData);
-        } else {
-            // Jika tidak ada cache, gunakan data dari server (PHP)
-            this.customers = @js($customers->items());
-        }
-
-        // 2. Simpan data terbaru dari server ke cache untuk kunjungan berikutnya
-        if (!this.search) {
-            localStorage.setItem('cache_customers_{{ $type }}', JSON.stringify(@js($customers->items())));
-        }
+        this.customers = @js($customers->items());
     },
 
     formData: {

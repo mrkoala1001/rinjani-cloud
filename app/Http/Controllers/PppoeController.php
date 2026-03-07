@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\MikrotikConfig;
+use App\Models\PppoeProfileMetadata;
+use Illuminate\Http\Request;
 use RouterOS\Client;
 use RouterOS\Query;
 use Exception;
@@ -21,7 +23,7 @@ class PppoeController extends Controller
                 'user' => $mkConfig->user,
                 'pass' => $mkConfig->pass,
                 'port' => (int)($mkConfig->port ?? 8728),
-                'timeout' => 2,
+                'timeout' => 10,
             ]);
         } catch (Exception $e) {
             return null;
@@ -91,6 +93,27 @@ class PppoeController extends Controller
                 $secrets = $client->query('/ppp/secret/print')->read();
                 $profiles = $client->query('/ppp/profile/print')->read();
                 $routerStatus = 'Connected';
+
+                // Get correct user context for metadata
+                $user = auth()->user();
+                $contextUserId = ($user->role === 'mitra-reseller' || $user->role === 'mitra') ? $user->created_by : $user->id;
+
+                // Filter profiles if mitra-reseller
+                if ($user->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
+                    $managedProfileNames = PppoeProfileMetadata::withoutGlobalScopes()
+                        ->where('user_id', $contextUserId)
+                        ->pluck('profile_name')
+                        ->toArray();
+                        
+                    $profiles = array_values(array_filter($profiles, function($p) use ($managedProfileNames) {
+                        return in_array($p['name'], $managedProfileNames);
+                    }));
+                    
+                    // Also filter secrets to show only those with managed profiles
+                    $secrets = array_values(array_filter($secrets, function($s) use ($managedProfileNames) {
+                        return in_array($s['profile'], $managedProfileNames);
+                    }));
+                }
             } catch (Exception $e) {
                 $routerStatus = 'Error: ' . $e->getMessage();
             }
@@ -104,6 +127,21 @@ class PppoeController extends Controller
         if (!$client) return redirect()->back()->with('error', 'Router not connected.');
 
         try {
+            // Get correct user context for metadata
+            $user = auth()->user();
+            $contextUserId = ($user->role === 'mitra-reseller' || $user->role === 'mitra') ? $user->created_by : $user->id;
+
+            // Validate profile if mitra-reseller
+            if ($user->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
+                $managedProfiles = PppoeProfileMetadata::withoutGlobalScopes()
+                    ->where('user_id', $contextUserId)
+                    ->pluck('profile_name')
+                    ->toArray();
+                if (!in_array($request->profile, $managedProfiles)) {
+                    return redirect()->back()->with('error', 'Profile not allowed.');
+                }
+            }
+
             $data = [
                 'name' => $request->name,
                 'password' => $request->password,
@@ -112,10 +150,6 @@ class PppoeController extends Controller
             ];
             
             if ($request->filled('local_address')) $data['local-address'] = $request->local_address;
-            if ($request->filled('remote_address')) $data['remote_address'] = $request->remote_address; // Note: RouterOS API uses hyphen usually, checking legacy
-            // PHP Client usually handles hyphen properly if passed in array keys? 
-            // Wait, evilfreelancer/routeros-api-php usually expects exact property names.
-            // RouterOS property is 'remote-address'.
             if ($request->filled('remote_address')) $data['remote-address'] = $request->remote_address;
             if ($request->filled('comment')) $data['comment'] = $request->comment;
 
@@ -154,6 +188,25 @@ class PppoeController extends Controller
         if ($client) {
             try {
                 $profiles = $client->query('/ppp/profile/print')->read();
+                
+                // Get correct user context for metadata
+                $user = auth()->user();
+                $contextUserId = ($user->role === 'mitra-reseller' || $user->role === 'mitra') ? $user->created_by : $user->id;
+
+                // Merge with metadata
+                foreach ($profiles as &$prof) {
+                    $prof['local_metadata'] = PppoeProfileMetadata::withoutGlobalScopes()
+                        ->where('user_id', $contextUserId)
+                        ->where('profile_name', $prof['name'])
+                        ->first();
+                }
+
+                if ($user->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
+                    $profiles = array_values(array_filter($profiles, function($p) {
+                        return isset($p['local_metadata']) && $p['local_metadata'] !== null;
+                    }));
+                }
+
                 $routerStatus = 'Connected';
             } catch (Exception $e) {
                  $routerStatus = 'Error: ' . $e->getMessage();
@@ -167,12 +220,10 @@ class PppoeController extends Controller
         if (!$client) return redirect()->back()->with('error', 'Router not connected.');
 
         try {
-            $data = [
-                'name' => $request->name,
-                'local-address' => $request->local_address,
-                'remote-address' => $request->remote_address,
-            ];
-            
+            $data = [];
+            if ($request->filled('name')) $data['name'] = $request->name;
+            if ($request->filled('local_address')) $data['local-address'] = $request->local_address;
+            if ($request->filled('remote_address')) $data['remote-address'] = $request->remote_address;
             if ($request->filled('rate_limit')) $data['rate-limit'] = $request->rate_limit;
             if ($request->filled('dns_server')) $data['dns-server'] = $request->dns_server;
 
@@ -181,7 +232,22 @@ class PppoeController extends Controller
                 $query->equal($k, $v);
             }
             
-            $client->query($query)->read();
+            $result = $client->query($query)->read();
+            
+            // Periksa apakah ada error dari MikroTik
+            if (isset($result['after']['message'])) {
+                return redirect()->back()->with('error', 'Gagal membuat profile: ' . $result['after']['message']);
+            }
+
+            // Save Metadata
+            PppoeProfileMetadata::updateOrCreate(
+                ['profile_name' => $request->name],
+                [
+                    'price' => $request->price ?? 0,
+                    'selling_price' => $request->selling_price ?? 0
+                ]
+            );
+
             return redirect()->back()->with('success', 'Profile added successfully.');
 
         } catch (Exception $e) {
@@ -208,7 +274,22 @@ class PppoeController extends Controller
                 $query->equal($k, $v);
             }
             
-            $client->query($query)->read();
+            $result = $client->query($query)->read();
+
+            // Periksa apakah ada error dari MikroTik
+            if (isset($result['after']['message'])) {
+                return redirect()->back()->with('error', 'Gagal update profile: ' . $result['after']['message']);
+            }
+
+            // Update Metadata
+            PppoeProfileMetadata::updateOrCreate(
+                ['profile_name' => $request->name],
+                [
+                    'price' => $request->price ?? 0,
+                    'selling_price' => $request->selling_price ?? 0
+                ]
+            );
+
             return redirect()->back()->with('success', 'Profile updated successfully.');
 
         } catch (Exception $e) {
@@ -220,8 +301,23 @@ class PppoeController extends Controller
         $client = $this->getClient();
          if ($client) {
             try {
+                // Find profile name first if possible
+                $profiles = $client->query('/ppp/profile/print')->read();
+                $profName = null;
+                foreach ($profiles as $p) {
+                    if ($p['.id'] == $id) {
+                        $profName = $p['name'];
+                        break;
+                    }
+                }
+
                 $query = (new Query('/ppp/profile/remove'))->equal('.id', $id);
                 $client->query($query)->read();
+
+                if ($profName) {
+                    PppoeProfileMetadata::where('profile_name', $profName)->delete();
+                }
+
                 return redirect()->back()->with('success', 'Profile deleted successfully.');
             } catch (Exception $e) {
                 return redirect()->back()->with('error', 'Failed to delete profile: ' . $e->getMessage());
@@ -235,6 +331,21 @@ class PppoeController extends Controller
         if (!$client) return redirect()->back()->with('error', 'Router not connected.');
 
         try {
+            // Get correct user context for metadata
+            $user = auth()->user();
+            $contextUserId = ($user->role === 'mitra-reseller' || $user->role === 'mitra') ? $user->created_by : $user->id;
+
+            // Validate profile if mitra-reseller
+            if ($request->filled('profile') && $user->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
+                $managedProfiles = PppoeProfileMetadata::withoutGlobalScopes()
+                    ->where('user_id', $contextUserId)
+                    ->pluck('profile_name')
+                    ->toArray();
+                if (!in_array($request->profile, $managedProfiles)) {
+                    return redirect()->back()->with('error', 'Profile not allowed.');
+                }
+            }
+
             $data = [];
             if ($request->filled('name')) $data['name'] = $request->name;
             if ($request->filled('password')) $data['password'] = $request->password;
