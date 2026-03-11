@@ -178,35 +178,35 @@
                         <div x-show="open" x-cloak x-transition.origin.top.duration.200ms class="space-y-1 pl-11 pr-2">
                             <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.generate') ? route('voucher.generate') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.generate') ? (request()->routeIs('voucher.generate') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
                                 <span>Generate Voucher</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.generate')) <span class="upgrade-badge">Upgrade</span> @endif
+                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.generate')) <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a> @endif
                             </a>
                             @if(auth()->user()->role !== 'mitra-reseller')
                             <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.list') ? route('voucher.list') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.list') ? (request()->routeIs('voucher.list') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
                                 <span>Daftar Voucher</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.list')) <span class="upgrade-badge">Upgrade</span> @endif
+                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.list')) <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a> @endif
                             </a>
                             @endif
                             <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.distribution') ? route('voucher.distribution') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.distribution') ? (request()->routeIs('voucher.distribution') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
                                 <span>Distribusi</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.distribution')) <span class="upgrade-badge">Upgrade</span> @endif
+                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.distribution')) <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a> @endif
                             </a>
                             @if(auth()->user()->role !== 'mitra-reseller')
                             <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.profiles') ? route('voucher.profiles') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.profiles') ? (request()->routeIs('voucher.profiles') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
                                 <span>Profil & Sync</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.profiles')) <span class="upgrade-badge">Upgrade</span> @endif
+                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.profiles')) <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a> @endif
                             </a>
                             @endif
                             <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.online') ? route('voucher.online') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.online') ? (request()->routeIs('voucher.online') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
                                 <span>Online Users</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.online')) <span class="upgrade-badge">Upgrade</span> @endif
+                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.online')) <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a> @endif
                             </a>
                             <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.sold') ? route('voucher.sold') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.sold') ? (request()->routeIs('voucher.sold') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
                                 <span>Terjual</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.sold')) <span class="upgrade-badge">Upgrade</span> @endif
+                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.sold')) <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a> @endif
                             </a>
                             <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.templates') ? route('voucher.templates') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.templates') ? (request()->routeIs('voucher.templates') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
                                 <span>Templates</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.templates')) <span class="upgrade-badge">Upgrade</span> @endif
+                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.templates')) <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a> @endif
                             </a>
                             <a href="{{ route('owner.reseller.balance') }}" class="block py-2 px-3 rounded-md text-sm font-bold border-t border-slate-700/50 mt-1 pt-2 transition duration-200 hover:bg-slate-700 {{ request()->routeIs('owner.reseller.balance') ? 'bg-orange-600 text-white shadow-md' : 'text-orange-400 hover:text-white' }}">
                                 <i class="fas fa-wallet mr-1"></i> {{ auth()->user()->role === 'mitra-reseller' ? 'Isi Saldo' : 'Manage Saldo' }}
@@ -231,15 +231,15 @@
                         <div x-show="open" x-cloak x-transition.origin.top.duration.200ms class="space-y-1 pl-11 pr-2">
                             <a href="{{ \App\Helpers\PlanHelper::canAccess('pppoe.active') ? route('pppoe.active') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('pppoe.active') ? (request()->routeIs('pppoe.active') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
                                 <span>Active</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('pppoe.active')) <span class="upgrade-badge">Upgrade</span> @endif
+                                @if(!\App\Helpers\PlanHelper::canAccess('pppoe.active')) <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a> @endif
                             </a>
                             <a href="{{ \App\Helpers\PlanHelper::canAccess('pppoe.profiles') ? route('pppoe.profiles') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('pppoe.profiles') ? (request()->routeIs('pppoe.profiles') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
                                 <span>Profiles</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('pppoe.profiles')) <span class="upgrade-badge">Upgrade</span> @endif
+                                @if(!\App\Helpers\PlanHelper::canAccess('pppoe.profiles')) <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a> @endif
                             </a>
                             <a href="{{ \App\Helpers\PlanHelper::canAccess('pppoe.secrets') ? route('pppoe.secrets') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('pppoe.secrets') ? (request()->routeIs('pppoe.secrets') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
                                 <span>Secrets</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('pppoe.secrets')) <span class="upgrade-badge">Upgrade</span> @endif
+                                @if(!\App\Helpers\PlanHelper::canAccess('pppoe.secrets')) <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a> @endif
                             </a>
                         </div>
                     </div>
@@ -252,7 +252,7 @@
                             <span class="font-medium">WAN-IP STATIC</span>
                         </div>
                         @if(!\App\Helpers\PlanHelper::canAccess('wan_static'))
-                            <span class="upgrade-badge">Upgrade</span>
+                            <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a>
                         @endif
                     </a>
 
@@ -265,7 +265,7 @@
                                 <span class="font-medium">Pelanggan</span>
                             </div>
                             @if(!\App\Helpers\PlanHelper::canAccess('customer'))
-                                <span class="upgrade-badge">Upgrade</span>
+                                <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a>
                             @else
                                 <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
                             @endif
@@ -297,7 +297,7 @@
                                 <span class="font-medium">Billing & Sales</span>
                             </div>
                             @if(!\App\Helpers\PlanHelper::canAccess('billing_sales'))
-                                <span class="upgrade-badge">Upgrade</span>
+                                <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a>
                             @else
                                 <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
                             @endif
@@ -327,7 +327,7 @@
                             <span class="font-medium">WhatsApp Gateway</span>
                         </div>
                         @if(!\App\Helpers\PlanHelper::canAccess('wa_gateway'))
-                            <span class="upgrade-badge">Upgrade</span>
+                            <a href="{{ route('plan.index') }}" class="upgrade-badge hover:scale-110 transition-transform">Upgrade</a>
                         @endif
                     </a>
                     <a href="{{ route('settings') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('settings') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">

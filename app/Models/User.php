@@ -34,6 +34,7 @@ class User extends Authenticatable
         'winbox',
         'ip_api',
         'whatsapp',
+        'plan_expires_at',
     ];
 
     /**
@@ -57,6 +58,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'plan_expires_at' => 'datetime',
         ];
     }
 

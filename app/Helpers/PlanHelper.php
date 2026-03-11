@@ -80,6 +80,12 @@ class PlanHelper
         if (in_array($user->role, ['builder', 'isp'])) return true;
 
         $plan = $user->plan ?? 'basic';
+
+        // Check if plan is expired (except for basic)
+        if ($plan !== 'basic' && (!isset($user->plan_expires_at) || $user->plan_expires_at->isPast())) {
+            $plan = 'basic';
+        }
+
         $config = self::getPlanConfig($plan);
 
         if ($config['menus'] === '*') return true;

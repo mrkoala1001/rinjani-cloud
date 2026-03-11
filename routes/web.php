@@ -87,7 +87,8 @@ Route::domain('hotpot.depootcom.site')->group(function () {
         ]);
     });
 
-    // PWA Manifest for Reseller
+    // Plan Callback (Unprotected)
+    Route::post('/plan/callback', [\App\Http\Controllers\PlanController::class, 'callback'])->name('plan.callback');
     Route::get('/manifest-reseller.json', function() {
         return response()->json([
             "name" => "HOT POT Reseller",
@@ -138,6 +139,10 @@ Route::domain('hotpot.depootcom.site')->group(function () {
         Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
         Route::post('/profile', [DashboardController::class, 'updateProfile'])->name('profile.update');
         Route::get('/api/router-status', [DashboardController::class, 'getRouterStatus'])->name('api.router-status');
+        
+        // Plan & Upgrade Routes
+        Route::get('/pricing', [\App\Http\Controllers\PlanController::class, 'index'])->name('plan.index');
+        Route::post('/plan/purchase', [\App\Http\Controllers\PlanController::class, 'purchase'])->name('plan.purchase');
         
         // ISP / HOT SUPPORT Routes
         Route::middleware('role:isp')->prefix('hotsupport')->name('hotsupport.')->group(function () {

@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/*',
             'pakasir/callback',
             'topup/callback',
+            'plan/callback',
             'telegram/webhook',
         ]);
         $middleware->web(prepend: [
