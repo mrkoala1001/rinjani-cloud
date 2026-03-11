@@ -55,14 +55,16 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             transition: all 0.2s ease;
+            margin-left: 6px;
+            vertical-align: middle;
         }
         .upgrade-badge:hover {
-            transform: scale(1.2) rotate(10deg);
+            transform: scale(1.3) rotate(15deg);
             filter: brightness(1.1);
         }
         [x-cloak] { display: none !important; }
@@ -181,37 +183,30 @@
                             <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
                         </button>
                         <div x-show="open" x-cloak x-transition.origin.top.duration.200ms class="space-y-1 pl-11 pr-2">
-                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.generate') ? route('voucher.generate') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.generate') ? (request()->routeIs('voucher.generate') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
-                                <span>Generate Voucher</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.generate')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a> @endif
+                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.generate') ? route('voucher.generate') : 'javascript:void(0)' }}" class="flex items-center py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.generate') ? (request()->routeIs('voucher.generate') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
+                                <span>Generate Voucher @if(!\App\Helpers\PlanHelper::canAccess('vouchers.generate')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </a>
                             @if(auth()->user()->role !== 'mitra-reseller')
-                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.list') ? route('voucher.list') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.list') ? (request()->routeIs('voucher.list') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
-                                <span>Daftar Voucher</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.list')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a> @endif
+                             <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.list') ? route('voucher.list') : 'javascript:void(0)' }}" class="flex items-center py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.list') ? (request()->routeIs('voucher.list') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
+                                <span>Daftar Voucher @if(!\App\Helpers\PlanHelper::canAccess('vouchers.list')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </a>
                             @endif
-                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.distribution') ? route('voucher.distribution') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.distribution') ? (request()->routeIs('voucher.distribution') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
-                                <span>Distribusi</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.distribution')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a> @endif
+                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.distribution') ? route('voucher.distribution') : 'javascript:void(0)' }}" class="flex items-center py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.distribution') ? (request()->routeIs('voucher.distribution') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
+                                <span>Distribusi @if(!\App\Helpers\PlanHelper::canAccess('vouchers.distribution')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </a>
                             @if(auth()->user()->role !== 'mitra-reseller')
-                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.profiles') ? route('voucher.profiles') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.profiles') ? (request()->routeIs('voucher.profiles') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
-                                <span>Profil & Sync</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.profiles')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a> @endif
+                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.profiles') ? route('voucher.profiles') : 'javascript:void(0)' }}" class="flex items-center py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.profiles') ? (request()->routeIs('voucher.profiles') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
+                                <span>Profil & Sync @if(!\App\Helpers\PlanHelper::canAccess('vouchers.profiles')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </a>
                             @endif
-                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.online') ? route('voucher.online') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.online') ? (request()->routeIs('voucher.online') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
-                                <span>Online Users</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.online')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a> @endif
+                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.online') ? route('voucher.online') : 'javascript:void(0)' }}" class="flex items-center py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.online') ? (request()->routeIs('voucher.online') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
+                                <span>Online Users @if(!\App\Helpers\PlanHelper::canAccess('vouchers.online')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </a>
-                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.sold') ? route('voucher.sold') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.sold') ? (request()->routeIs('voucher.sold') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
-                                <span>Terjual</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.sold')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a> @endif
+                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.sold') ? route('voucher.sold') : 'javascript:void(0)' }}" class="flex items-center py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.sold') ? (request()->routeIs('voucher.sold') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
+                                <span>Terjual @if(!\App\Helpers\PlanHelper::canAccess('vouchers.sold')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </a>
-                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.templates') ? route('voucher.templates') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.templates') ? (request()->routeIs('voucher.templates') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
-                                <span>Templates</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('vouchers.templates')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a> @endif
+                            <a href="{{ \App\Helpers\PlanHelper::canAccess('vouchers.templates') ? route('voucher.templates') : 'javascript:void(0)' }}" class="flex items-center py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('vouchers.templates') ? (request()->routeIs('voucher.templates') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
+                                <span>Templates @if(!\App\Helpers\PlanHelper::canAccess('vouchers.templates')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </a>
                             <a href="{{ route('owner.reseller.balance') }}" class="block py-2 px-3 rounded-md text-sm font-bold border-t border-slate-700/50 mt-1 pt-2 transition duration-200 hover:bg-slate-700 {{ request()->routeIs('owner.reseller.balance') ? 'bg-orange-600 text-white shadow-md' : 'text-orange-400 hover:text-white' }}">
                                 <i class="fas fa-wallet mr-1"></i> {{ auth()->user()->role === 'mitra-reseller' ? 'Isi Saldo' : 'Manage Saldo' }}
@@ -234,31 +229,25 @@
                             <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
                         </button>
                         <div x-show="open" x-cloak x-transition.origin.top.duration.200ms class="space-y-1 pl-11 pr-2">
-                            <a href="{{ \App\Helpers\PlanHelper::canAccess('pppoe.active') ? route('pppoe.active') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('pppoe.active') ? (request()->routeIs('pppoe.active') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
-                                <span>Active</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('pppoe.active')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a> @endif
+                            <a href="{{ \App\Helpers\PlanHelper::canAccess('pppoe.active') ? route('pppoe.active') : 'javascript:void(0)' }}" class="flex items-center py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('pppoe.active') ? (request()->routeIs('pppoe.active') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
+                                <span>Active @if(!\App\Helpers\PlanHelper::canAccess('pppoe.active')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </a>
-                            <a href="{{ \App\Helpers\PlanHelper::canAccess('pppoe.profiles') ? route('pppoe.profiles') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('pppoe.profiles') ? (request()->routeIs('pppoe.profiles') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
-                                <span>Profiles</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('pppoe.profiles')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a> @endif
+                             <a href="{{ \App\Helpers\PlanHelper::canAccess('pppoe.profiles') ? route('pppoe.profiles') : 'javascript:void(0)' }}" class="flex items-center py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('pppoe.profiles') ? (request()->routeIs('pppoe.profiles') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
+                                <span>Profiles @if(!\App\Helpers\PlanHelper::canAccess('pppoe.profiles')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </a>
-                            <a href="{{ \App\Helpers\PlanHelper::canAccess('pppoe.secrets') ? route('pppoe.secrets') : 'javascript:void(0)' }}" class="flex items-center justify-between py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('pppoe.secrets') ? (request()->routeIs('pppoe.secrets') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
-                                <span>Secrets</span>
-                                @if(!\App\Helpers\PlanHelper::canAccess('pppoe.secrets')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a> @endif
+                            <a href="{{ \App\Helpers\PlanHelper::canAccess('pppoe.secrets') ? route('pppoe.secrets') : 'javascript:void(0)' }}" class="flex items-center py-2 px-3 rounded-md text-sm transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('pppoe.secrets') ? (request()->routeIs('pppoe.secrets') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-700 hover:text-white') : 'locked-menu text-slate-500' }}">
+                                <span>Secrets @if(!\App\Helpers\PlanHelper::canAccess('pppoe.secrets')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </a>
                         </div>
                     </div>
 
                     <!-- WAN-IP STATIC Section -->
                     <a href="{{ \App\Helpers\PlanHelper::canAccess('wan_static') ? route('wan-static.index') : 'javascript:void(0)' }}" 
-                       class="flex items-center justify-between py-2.5 px-4 rounded-lg transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('wan_static') ? (request()->routeIs('wan-static.*') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white') : 'locked-menu text-slate-500' }} group">
+                       class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('wan_static') ? (request()->routeIs('wan-static.*') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white') : 'locked-menu text-slate-500' }} group">
                         <div class="flex items-center">
                             <i class="fas fa-microchip mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
-                            <span class="font-medium">WAN-IP STATIC</span>
+                            <span class="font-medium">WAN-IP STATIC @if(!\App\Helpers\PlanHelper::canAccess('wan_static')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                         </div>
-                        @if(!\App\Helpers\PlanHelper::canAccess('wan_static'))
-                            <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a>
-                        @endif
                     </a>
 
                     <!-- Pelanggan Section -->
@@ -267,11 +256,9 @@
                                 class="w-full flex items-center justify-between py-2.5 px-4 rounded-lg transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('customer') ? (request()->routeIs('customer.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white') : 'locked-menu text-slate-500' }} group">
                             <div class="flex items-center">
                                 <i class="fas fa-users mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
-                                <span class="font-medium">Pelanggan</span>
+                                <span class="font-medium">Pelanggan @if(!\App\Helpers\PlanHelper::canAccess('customer')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </div>
-                            @if(!\App\Helpers\PlanHelper::canAccess('customer'))
-                                <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a>
-                            @else
+                            @if(\App\Helpers\PlanHelper::canAccess('customer'))
                                 <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
                             @endif
                         </button>
@@ -299,11 +286,9 @@
                                 class="w-full flex items-center justify-between py-2.5 px-4 rounded-lg transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('billing_sales') ? (request()->routeIs('billing.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white') : 'locked-menu text-slate-500' }} group">
                             <div class="flex items-center">
                                 <i class="fas fa-money-bill-wave mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
-                                <span class="font-medium">Billing & Sales</span>
+                                <span class="font-medium">Billing & Sales @if(!\App\Helpers\PlanHelper::canAccess('billing_sales')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                             </div>
-                            @if(!\App\Helpers\PlanHelper::canAccess('billing_sales'))
-                                <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a>
-                            @else
+                            @if(\App\Helpers\PlanHelper::canAccess('billing_sales'))
                                 <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
                             @endif
                         </button>
@@ -326,14 +311,11 @@
                     </div>
 
                     <a href="{{ \App\Helpers\PlanHelper::canAccess('wa_gateway') ? route('wa_gateway.index') : 'javascript:void(0)' }}" 
-                       class="flex items-center justify-between py-2.5 px-4 rounded-lg transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('wa_gateway') ? (request()->routeIs('wa_gateway.*') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white') : 'locked-menu text-slate-500' }} group">
+                       class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 {{ \App\Helpers\PlanHelper::canAccess('wa_gateway') ? (request()->routeIs('wa_gateway.*') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:bg-slate-800 hover:text-white') : 'locked-menu text-slate-500' }} group">
                         <div class="flex items-center">
                             <i class="fab fa-whatsapp mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
-                            <span class="font-medium">WhatsApp Gateway</span>
+                            <span class="font-medium">WhatsApp Gateway @if(!\App\Helpers\PlanHelper::canAccess('wa_gateway')) <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[8px]"></i></a> @endif</span>
                         </div>
-                        @if(!\App\Helpers\PlanHelper::canAccess('wa_gateway'))
-                            <a href="{{ route('plan.index') }}" class="upgrade-badge" title="Upgrade Plan untuk Akses"><i class="fas fa-crown text-[10px]"></i></a>
-                        @endif
                     </a>
                     <a href="{{ route('settings') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('settings') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                         <i class="fas fa-cog mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
