@@ -3,6 +3,7 @@ name: Deploy to Rinja-Cloud
 on:
   push:
     branches: [ "*" ]
+# Manual trigger to fix branch sync
 
 jobs:
   deploy:
