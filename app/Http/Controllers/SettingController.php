@@ -15,6 +15,10 @@ class SettingController extends Controller
     }
     
     public function update(Request $request) {
+        if (auth()->user()->role === 'owner') {
+            return redirect()->back()->with('error', 'Akses ditolak. Konfigurasi MikroTik dikelola oleh ISP Anda.');
+        }
+
         $validated = $request->validate([
             'host' => 'required',
             'user' => 'required',
@@ -82,11 +86,19 @@ class SettingController extends Controller
     }
 
     public function disconnect() {
+        if (auth()->user()->role === 'owner') {
+            return redirect()->back()->with('error', 'Akses ditolak. Konfigurasi MikroTik dikelola oleh ISP Anda.');
+        }
+
         MikrotikConfig::where('user_id', auth()->id())->delete();
         return redirect()->route('settings')->with('success', '✅ Jaringan MikroTik berhasil diputuskan!');
     }
 
     public function wipeData() {
+        if (auth()->user()->role === 'owner') {
+            return redirect()->back()->with('error', 'Akses ditolak. Fitur ini tidak tersedia untuk role Anda.');
+        }
+
         $userId = auth()->id();
         $isIsp = auth()->user()->role === 'isp';
         

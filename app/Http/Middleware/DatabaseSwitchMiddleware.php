@@ -19,7 +19,7 @@ class DatabaseSwitchMiddleware
     {
         $host = $request->getHost();
 
-        if ($host === 'depootcom.com' || $host === 'www.depootcom.com') {
+        if ($host === 'depootcom.site' || $host === 'www.depootcom.site') {
             // Set table suffix for Depootcom
             Config::set('app.table_suffix', '_blog');
             

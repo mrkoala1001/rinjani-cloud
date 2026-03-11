@@ -21,6 +21,7 @@ class RoleMiddleware
         if ($role === 'owner') {
             $allowedRoles[] = 'mitra';
             $allowedRoles[] = 'mitra-reseller';
+            $allowedRoles[] = 'owner-member';
         }
 
         if (! $userRole || !in_array($userRole, $allowedRoles)) {

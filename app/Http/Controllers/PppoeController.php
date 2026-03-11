@@ -14,7 +14,14 @@ class PppoeController extends Controller
 {
     private function getClient()
     {
-        $mkConfig = MikrotikConfig::where('user_id', auth()->id())->first();
+        $user = auth()->user();
+        $mkConfig = MikrotikConfig::where('user_id', $user->id)->first();
+        
+        // If not found, try to use the creator's config (for sub-accounts like mitra/mitra-reseller)
+        if (!$mkConfig && $user->created_by) {
+            $mkConfig = MikrotikConfig::where('user_id', $user->created_by)->first();
+        }
+
         if (!$mkConfig) return null;
 
         try {
@@ -94,26 +101,7 @@ class PppoeController extends Controller
                 $profiles = $client->query('/ppp/profile/print')->read();
                 $routerStatus = 'Connected';
 
-                // Get correct user context for metadata
-                $user = auth()->user();
-                $contextUserId = ($user->role === 'mitra-reseller' || $user->role === 'mitra') ? $user->created_by : $user->id;
-
-                // Filter profiles if mitra-reseller
-                if ($user->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
-                    $managedProfileNames = PppoeProfileMetadata::withoutGlobalScopes()
-                        ->where('user_id', $contextUserId)
-                        ->pluck('profile_name')
-                        ->toArray();
-                        
-                    $profiles = array_values(array_filter($profiles, function($p) use ($managedProfileNames) {
-                        return in_array($p['name'], $managedProfileNames);
-                    }));
-                    
-                    // Also filter secrets to show only those with managed profiles
-                    $secrets = array_values(array_filter($secrets, function($s) use ($managedProfileNames) {
-                        return in_array($s['profile'], $managedProfileNames);
-                    }));
-                }
+                $routerStatus = 'Connected';
             } catch (Exception $e) {
                 $routerStatus = 'Error: ' . $e->getMessage();
             }
@@ -127,21 +115,6 @@ class PppoeController extends Controller
         if (!$client) return redirect()->back()->with('error', 'Router not connected.');
 
         try {
-            // Get correct user context for metadata
-            $user = auth()->user();
-            $contextUserId = ($user->role === 'mitra-reseller' || $user->role === 'mitra') ? $user->created_by : $user->id;
-
-            // Validate profile if mitra-reseller
-            if ($user->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
-                $managedProfiles = PppoeProfileMetadata::withoutGlobalScopes()
-                    ->where('user_id', $contextUserId)
-                    ->pluck('profile_name')
-                    ->toArray();
-                if (!in_array($request->profile, $managedProfiles)) {
-                    return redirect()->back()->with('error', 'Profile not allowed.');
-                }
-            }
-
             $data = [
                 'name' => $request->name,
                 'password' => $request->password,
@@ -191,7 +164,7 @@ class PppoeController extends Controller
                 
                 // Get correct user context for metadata
                 $user = auth()->user();
-                $contextUserId = ($user->role === 'mitra-reseller' || $user->role === 'mitra') ? $user->created_by : $user->id;
+                $contextUserId = in_array($user->role, ['mitra-reseller', 'mitra']) ? $user->created_by : $user->id;
 
                 // Merge with metadata
                 foreach ($profiles as &$prof) {
@@ -201,15 +174,9 @@ class PppoeController extends Controller
                         ->first();
                 }
 
-                if ($user->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
-                    $profiles = array_values(array_filter($profiles, function($p) {
-                        return isset($p['local_metadata']) && $p['local_metadata'] !== null;
-                    }));
-                }
-
                 $routerStatus = 'Connected';
             } catch (Exception $e) {
-                 $routerStatus = 'Error: ' . $e->getMessage();
+                $routerStatus = 'Error: ' . $e->getMessage();
             }
         }
         return view('pppoe.profiles', compact('profiles', 'routerStatus'));
@@ -240,8 +207,14 @@ class PppoeController extends Controller
             }
 
             // Save Metadata
+            $user = auth()->user();
+            $contextUserId = in_array($user->role, ['mitra-reseller', 'mitra']) ? $user->created_by : $user->id;
+
             PppoeProfileMetadata::updateOrCreate(
-                ['profile_name' => $request->name],
+                [
+                    'user_id' => $contextUserId,
+                    'profile_name' => $request->name
+                ],
                 [
                     'price' => $request->price ?? 0,
                     'selling_price' => $request->selling_price ?? 0
@@ -282,8 +255,14 @@ class PppoeController extends Controller
             }
 
             // Update Metadata
+            $user = auth()->user();
+            $contextUserId = in_array($user->role, ['mitra-reseller', 'mitra']) ? $user->created_by : $user->id;
+
             PppoeProfileMetadata::updateOrCreate(
-                ['profile_name' => $request->name],
+                [
+                    'user_id' => $contextUserId,
+                    'profile_name' => $request->name
+                ],
                 [
                     'price' => $request->price ?? 0,
                     'selling_price' => $request->selling_price ?? 0
@@ -331,21 +310,6 @@ class PppoeController extends Controller
         if (!$client) return redirect()->back()->with('error', 'Router not connected.');
 
         try {
-            // Get correct user context for metadata
-            $user = auth()->user();
-            $contextUserId = ($user->role === 'mitra-reseller' || $user->role === 'mitra') ? $user->created_by : $user->id;
-
-            // Validate profile if mitra-reseller
-            if ($request->filled('profile') && $user->role === 'mitra-reseller' && !session()->has('impersonated_by')) {
-                $managedProfiles = PppoeProfileMetadata::withoutGlobalScopes()
-                    ->where('user_id', $contextUserId)
-                    ->pluck('profile_name')
-                    ->toArray();
-                if (!in_array($request->profile, $managedProfiles)) {
-                    return redirect()->back()->with('error', 'Profile not allowed.');
-                }
-            }
-
             $data = [];
             if ($request->filled('name')) $data['name'] = $request->name;
             if ($request->filled('password')) $data['password'] = $request->password;

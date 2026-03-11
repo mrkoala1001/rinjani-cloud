@@ -41,7 +41,7 @@ class LandingController extends Controller
             [
                 'name' => 'Hotpot Management',
                 'description' => 'Solusi manajemen hotspot dan billing otomatis untuk ISP, Cafe, dan RT-RW Net.',
-                'url' => 'http://hotpot.depootcom.com',
+                'url' => 'http://hotpot.depootcom.site',
                 'tag' => 'Network Management'
             ]
         ];

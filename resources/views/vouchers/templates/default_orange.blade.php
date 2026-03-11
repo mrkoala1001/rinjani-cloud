@@ -48,7 +48,7 @@
 	      <td colspan="2" style="font-size: 10px; text-align: center; padding-bottom: 4px; border-top: 1px dashed #eee">{{validity}} / {{timelimit}}</td>
 	    </tr>
 	    <tr>
-	      <td colspan="3" style="font-size: 9px; text-align: center; background: #f9f9f9; padding: 2px; border-top: 1px solid #000;">Login: http://{{login_link}}</td>
+	      <td colspan="3" style="font-size: 9px; text-align: center; background: #f9f9f9; padding: 2px; border-top: 1px solid #000;">http://{{login_link}}</td>
 	    </tr>
-	  <tr><td colspan="3" style="font-size: 8px; text-align: center; color: #666; padding: 2px; border-top: 1px dashed #eee;">Reseller: {{reseller}} | WA: {{wa_number}}</td></tr></tbody>
+	  <tr><td colspan="3" style="font-size: 8px; text-align: center; color: #666; padding: 2px; border-top: 1px dashed #eee;">{{reseller}} |{{wa_number}}</td></tr></tbody>
 	</table>

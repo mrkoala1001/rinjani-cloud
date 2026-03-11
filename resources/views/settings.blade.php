@@ -53,6 +53,7 @@
                             </label>
                             <input type="text" name="host" id="host" required
                                    value="{{ $config->host ?? '' }}"
+                                   {{ auth()->user()->role === 'owner' ? 'readonly disabled' : '' }}
                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
                                    placeholder="192.168.88.1">
                             <p class="text-xs text-gray-500 mt-1">IP Address atau hostname router MikroTik</p>
@@ -64,6 +65,7 @@
                             </label>
                             <input type="number" name="port" id="port"
                                    value="{{ $config->port ?? '8728' }}"
+                                   {{ auth()->user()->role === 'owner' ? 'readonly disabled' : '' }}
                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
                                    placeholder="8728">
                             <p class="text-xs text-gray-500 mt-1">Default: 8728 (API), 8729 (API-SSL)</p>
@@ -75,6 +77,7 @@
                             </label>
                             <input type="text" name="user" id="user" required
                                    value="{{ $config->user ?? '' }}"
+                                   {{ auth()->user()->role === 'owner' ? 'readonly disabled' : '' }}
                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
                                    placeholder="admin">
                             <p class="text-xs text-gray-500 mt-1">Username dengan akses API</p>
@@ -86,6 +89,7 @@
                             </label>
                             <input type="password" name="pass" id="pass" autocomplete="current-password"
                                    value="{{ $config->pass ?? '' }}"
+                                   {{ auth()->user()->role === 'owner' ? 'readonly disabled' : '' }}
                                    class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
                                    placeholder="********">
                             <p class="text-xs text-gray-500 mt-1">Password untuk user tersebut</p>
@@ -95,6 +99,7 @@
                              <div class="flex items-center">
                                 <div class="flex items-center h-5">
                                     <input id="use_radius" name="use_radius" type="checkbox" value="1" {{ ($config->use_radius ?? false) ? 'checked' : '' }}
+                                           {{ auth()->user()->role === 'owner' ? 'disabled' : '' }}
                                            class="focus:ring-blue-500 h-5 w-5 text-blue-600 border-gray-300 rounded cursor-pointer">
                                 </div>
                                 <div class="ml-3 text-sm">
@@ -110,6 +115,7 @@
                         </div>
                     </div>
 
+                    @if(auth()->user()->role !== 'owner')
                     <div class="flex items-center justify-between mt-8 pt-6 border-t">
                         <button type="submit" formaction="{{ route('settings.test') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline transition flex items-center">
                             <i class="fas fa-plug mr-2"></i> Test Koneksi
@@ -118,6 +124,11 @@
                             <i class="fas fa-save mr-2"></i> Simpan Konfigurasi
                         </button>
                     </div>
+                    @else
+                    <div class="mt-8 pt-6 border-t text-red-500 font-bold">
+                        <i class="fas fa-info-circle mr-1"></i> Konfigurasi koneksi MikroTik Anda dikelola oleh ISP.
+                    </div>
+                    @endif
                 </form>
 
                 <!-- Connection Tips -->
@@ -203,6 +214,7 @@
                     </div>
 
                     <!-- Danger Zone -->
+                    @if(auth()->user()->role !== 'owner')
                     <div class="bg-red-50 rounded p-4 border border-red-100">
                         <h4 class="font-bold text-red-700 mb-1 flex items-center">
                             <i class="fas fa-exclamation-triangle mr-2"></i> Zona Berbahaya
@@ -225,6 +237,7 @@
                             </form>
                         </div>
                     </div>
+                    @endif
                 </div>
             </div>
         </div>

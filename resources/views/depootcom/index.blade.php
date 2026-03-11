@@ -9,19 +9,19 @@
     <meta name="description" content="Depootcom menyediakan solusi teknologi masa depan mulai dari pengembangan software kustom, infrastruktur hardware, hingga manajemen jaringan ISP & Hotspot Billing. Mitra transformasi digital terbaik Anda.">
     <meta name="keywords" content="Depootcom, IT Solutions, Software Development Indonesia, Hardware Infrastructure, Networking, Hotspot Management, Billing System, Rinsride Rental, Managed IT Services">
     <meta name="author" content="Depootcom Team">
-    <link rel="canonical" href="https://depootcom.com">
+    <link rel="canonical" href="https://depootcom.site">
     <meta name="google-site-verification" content="googled3643cf4597fec57" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://depootcom.com">
+    <meta property="og:url" content="https://depootcom.site">
     <meta property="og:title" content="Depootcom - Digital Acceleration Mastery">
     <meta property="og:description" content="Solusi teknologi terintegrasi untuk akselerasi bisnis Anda. Hardware, Software, dan Jaringan kelas dunia.">
     <meta property="og:image" content="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://depootcom.com">
+    <meta property="twitter:url" content="https://depootcom.site">
     <meta property="twitter:title" content="Depootcom - Digital Acceleration Mastery">
     <meta property="twitter:description" content="Solusi teknologi terintegrasi untuk akselerasi bisnis Anda. Hardware, Software, dan Jaringan kelas dunia.">
     <meta property="twitter:image" content="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&q=80&w=1200">
@@ -32,8 +32,8 @@
       "@@context": "https://schema.org",
       "@@type": "Organization",
       "name": "Depootcom",
-      "url": "https://depootcom.com",
-      "logo": "https://depootcom.com/logo.png",
+      "url": "https://depootcom.site",
+      "logo": "https://depootcom.site/logo.png",
       "sameAs": [
         "https://instagram.com/depootcom"
       ],

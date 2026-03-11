@@ -31,11 +31,9 @@
                        class="w-full pl-10 pr-4 py-2 border rounded shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
                 <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
             </div>
-            @if (auth()->user()->role !== 'mitra-reseller')
             <button @click="showModal = true" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition text-sm flex items-center justify-center">
                 <i class="fas fa-plus mr-2"></i>Add Profile
             </button>
-            @endif
         </div>
     </div>
 
@@ -75,7 +73,7 @@
                                 <button @click="viewData = p; viewModalOpen = true" class="text-blue-500 hover:text-blue-700 mx-1" title="View Details">
                                     <i class="fas fa-eye text-sm"></i>
                                 </button>
-                                <button @click="editData = p; editModalOpen = true" class="text-yellow-500 hover:text-yellow-700 mx-1" title="Edit Profile">
+                                <button @click="editData = JSON.parse(JSON.stringify(p)); if(!editData.local_metadata) editData.local_metadata = {price: 0, selling_price: 0}; editModalOpen = true" class="text-yellow-500 hover:text-yellow-700 mx-1" title="Edit Profile">
                                     <i class="fas fa-edit text-sm"></i>
                                 </button>
                                 <a :href="'{{ route('pppoe.deleteProfile', ['id' => 'PLACEHOLDER']) }}'.replace('PLACEHOLDER', encodeURIComponent(p['.id']))" 

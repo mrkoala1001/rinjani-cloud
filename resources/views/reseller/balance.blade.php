@@ -45,19 +45,26 @@
             Untuk melakukan pengisian saldo, silakan hubungi owner/admin melalui WhatsApp atau kunjungi kantor pusat kami.
         </p>
         
-        <a href="https://wa.me/6281234567890?text=Halo%20Owner,%20saya%20reseller%20{{ auth()->user()->name }}%20ingin%20top%20up%20saldo." target="_blank" class="w-full py-4 bg-slate-900 hover:bg-black text-white font-black rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 group">
-            <i class="fab fa-whatsapp text-green-400 group-hover:scale-110 transition-transform"></i>
-            KONTAK OWNER UNTUK TOP-UP
+        <a href="{{ route('reseller.topup.index') }}" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white font-black rounded-2xl shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-3 mb-4">
+            <i class="fas fa-bolt text-yellow-300"></i>
+            TOP-UP OTOMATIS (GATEWAY)
+        </a>
+        
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">— ATAU —</p>
+
+        <a href="https://wa.me/6281234567890?text=Halo%20Owner,%20saya%20reseller%20{{ auth()->user()->name }}%20ingin%20top%20up%20saldo." target="_blank" class="w-full py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black rounded-2xl transition-all active:scale-95 flex items-center justify-center gap-3 group">
+            <i class="fab fa-whatsapp text-green-500 group-hover:scale-110 transition-transform"></i>
+            KONTAK OWNER (MANUAL)
         </a>
 
         <div class="mt-8 grid grid-cols-2 gap-4 w-full">
             <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight mb-1">Setoran Terakhir</p>
-                <p class="font-bold text-slate-800 text-sm">Rp 0</p>
+                <p class="font-bold text-slate-800 text-sm">Rp {{ number_format($lastDeposit->amount ?? 0, 0, ',', '.') }}</p>
             </div>
             <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                 <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-tight mb-1">Total Transaksi</p>
-                <p class="font-bold text-slate-800 text-sm">0 Trx</p>
+                <p class="font-bold text-slate-800 text-sm">{{ $totalTransactions ?? 0 }} Trx</p>
             </div>
         </div>
     </div>

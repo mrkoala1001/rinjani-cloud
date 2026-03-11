@@ -25,7 +25,7 @@ class BuilderController extends Controller
         // 2. Database Stats
         $usersCount = User::count();
         $ispCount = User::where('role', 'isp')->count();
-        $ownerCount = User::where('role', 'owner')->count();
+        $ownerCount = User::whereIn('role', ['owner', 'owner-member'])->count();
         $billingCount = DB::table('billing_history')->count();
         
         // 3. Recent Logs (Mockup, or could read log file)
@@ -60,7 +60,7 @@ class BuilderController extends Controller
 
     public function impersonate($id)
     {
-        $user = User::whereIn('role', ['isp', 'owner'])->findOrFail($id);
+        $user = User::whereIn('role', ['isp', 'owner', 'owner-member'])->findOrFail($id);
         
         // Store original ID
         session(['impersonated_by' => auth()->id()]);
@@ -72,7 +72,7 @@ class BuilderController extends Controller
         $origin = $user->origin ?? 'hotpot';
         
         if ($origin === 'p3pot') {
-            return redirect()->away('http://p3pot.depootcom.com/owner/dashboard')->with('success', "Logged in as P3POT {$user->role}: {$user->name}");
+            return redirect()->away('http://p3pot.depootcom.site/owner/dashboard')->with('success', "Logged in as P3POT {$user->role}: {$user->name}");
         }
         
         // Default Hotspot redirection
@@ -123,7 +123,7 @@ class BuilderController extends Controller
         \DB::transaction(function () use ($user) {
             $userId = $user->id;
 
-            if ($user->role === 'owner') {
+            if (in_array($user->role, ['owner', 'owner-member'])) {
                 // Delete all related data (same as HotSupportController)
                 \App\Models\Income::withoutGlobalScopes()->where('user_id', $userId)->delete();
                 \App\Models\BillingHistory::withoutGlobalScopes()->where('user_id', $userId)->delete();

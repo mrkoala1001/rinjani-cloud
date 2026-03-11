@@ -56,7 +56,7 @@
                         <i class="fas fa-user absolute left-6 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
                         <input type="text" id="email" name="email" value="{{ old('email') }}" required autofocus autocomplete="email"
                             class="w-full bg-white/5 border border-white/10 rounded-2xl px-14 py-4 focus:outline-none focus:border-pink-500 transition-colors font-bold text-sm text-white placeholder-slate-600"
-                            placeholder="username@depootcom.com">
+                            placeholder="username@depootcom.site">
                     </div>
                 </div>
 

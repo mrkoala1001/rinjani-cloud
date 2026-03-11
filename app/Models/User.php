@@ -24,6 +24,7 @@ class User extends Authenticatable
         'username',
         'password',
         'role',
+        'plan',
         'created_by', // Added ownership
         'is_active',
         'location',

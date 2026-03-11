@@ -64,7 +64,7 @@ class TelegramBotController extends Controller
                 "Cara penggunaan:\n" .
                 "1. Ketik judul artikel yang ingin dibuat\n" .
                 "2. Bot akan menghasilkan artikel lengkap + gambar\n" .
-                "3. Hasil akan tersimpan di blog depootcom.com\n\n" .
+                "3. Hasil akan tersimpan di blog depootcom.site\n\n" .
                 "Gunakan /help untuk instruksi lebih detail.";
 
         Telegram::sendMessage([
@@ -146,7 +146,7 @@ class TelegramBotController extends Controller
                 $successText = "✅ *Artikel Berhasil Dibuat!*\n\n" .
                                "*Judul:* " . $result['title'] . "\n" .
                                "*URL:* " . $result['url'] . "\n\n" .
-                               "Artikel telah disimpan dan akan muncul di blog depootcom.com";
+                               "Artikel telah disimpan dan akan muncul di blog depootcom.site";
 
                 Telegram::editMessageText([
                     'chat_id' => $chatId,
@@ -215,7 +215,7 @@ class TelegramBotController extends Controller
             return [
                 'success' => true,
                 'title' => 'Artikel Baru',
-                'url' => 'https://depootcom.com/blog',
+                'url' => 'https://depootcom.site/blog',
                 'image_url' => $imageUrl,
             ];
         }

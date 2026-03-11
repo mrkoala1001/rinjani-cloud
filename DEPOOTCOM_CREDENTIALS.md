@@ -3,8 +3,8 @@
 Akses login khusus untuk mengelola Depootcom (Blog & Content Management).
 
 ## Akses Login
-- **URL Login:** [depootcom.com/login](https://depootcom.com/login)
-- **Email:** `admin@depootcom.com`
+- **URL Login:** [depootcom.site/login](https://depootcom.site/login)
+- **Email:** `admin@depootcom.site`
 - **Password:** `AdminDepootcom2026!`
 
 ## Catatan Keamanan

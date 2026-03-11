@@ -60,7 +60,7 @@
     <div class="mt-8 p-6 bg-indigo-500/5 rounded-2xl border border-indigo-500/10 flex gap-4 items-start">
         <i class="fas fa-info-circle text-indigo-400 mt-1"></i>
         <p class="text-sm text-slate-400 leading-relaxed">
-            Ensure your Webhook URL in the payment gateway dashboard is set to <span class="text-indigo-400 font-mono">https://p3pot.depootcom.com/webhook/payment</span>.
+            Ensure your Webhook URL in the payment gateway dashboard is set to <span class="text-indigo-400 font-mono">https://p3pot.depootcom.site/webhook/payment</span>.
         </p>
     </div>
 </div>

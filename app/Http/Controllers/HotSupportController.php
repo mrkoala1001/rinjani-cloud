@@ -917,4 +917,59 @@ class HotSupportController extends Controller
             return back()->with('error', 'Gagal menghapus profile: ' . $e->getMessage());
         }
     }
+    public function paymentGatewayIndex()
+    {
+        $config = \App\Models\PaymentGatewayConfig::where('user_id', auth()->id())->first();
+        return view('hotsupport.payment_gateway.index', compact('config'));
+    }
+
+    public function paymentGatewayUpdate(Request $request)
+    {
+        $request->validate([
+            'merchant_code' => 'required|string',
+            'api_key' => 'required|string',
+            'mode' => 'required|in:sandbox,production',
+        ]);
+
+        \App\Models\PaymentGatewayConfig::updateOrCreate(
+            ['user_id' => auth()->id()],
+            [
+                'provider' => 'pakasir',
+                'merchant_code' => $request->merchant_code,
+                'api_key' => $request->api_key,
+                'mode' => $request->mode,
+                'is_active' => $request->has('is_active') ? 1 : 0
+            ]
+        );
+
+        return redirect()->back()->with('success', 'Konfigurasi Pakasir berhasil disimpan.');
+    }
+
+    public function topupHistory()
+    {
+        $topups = \App\Models\TopupRequest::where('isp_id', auth()->id())
+            ->with('user')
+            ->latest()
+            ->paginate(15);
+            
+        $config = \App\Models\PaymentGatewayConfig::where('user_id', auth()->id())->first();
+            
+        return view('hotsupport.payment_gateway.topup_history', compact('topups', 'config'));
+    }
+
+    public function simulateTopup($id)
+    {
+        $topup = \App\Models\TopupRequest::where('id', $id)
+            ->where('isp_id', auth()->id())
+            ->firstOrFail();
+
+        $pakasir = new \App\Services\PakasirService(auth()->id());
+        $response = $pakasir->simulatePayment($topup->merchant_ref, $topup->amount);
+
+        if (isset($response['success']) && $response['success']) {
+            return redirect()->back()->with('success', 'Simulasi pembayaran berhasil dikirim. Saldo akan segera diproses via webhook.');
+        }
+
+        return redirect()->back()->with('error', 'Gagal simulasi: ' . ($response['message'] ?? 'Unknown Error'));
+    }
 }

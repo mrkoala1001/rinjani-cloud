@@ -109,8 +109,23 @@
                             <a href="{{ route('hotsupport.mitra-reseller.profiles') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('hotsupport.mitra-reseller.profiles') || request()->routeIs('hotsupport.mitra-reseller.profiles.*') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                                 Manage Profile (Voucher)
                             </a>
-                            <a href="{{ route('hotsupport.mitra-reseller.pppoe-profiles') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('hotsupport.mitra-reseller.pppoe-profiles') || request()->routeIs('hotsupport.mitra-reseller.pppoe-profiles.*') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
-                                Manage Profile (PPPoE)
+                        </div>
+                    </div>
+
+                    <div x-data="{ open: {{ request()->routeIs('hotsupport.payment-gateway.*') ? 'true' : 'false' }} }" class="space-y-1">
+                        <button @click="open = !open" class="w-full flex items-center justify-between py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('hotsupport.payment-gateway.*') ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-white' }}">
+                            <div class="flex items-center">
+                                <i class="fas fa-credit-card mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                                <span class="font-medium">Payment Gateway</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-xs transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                        </button>
+                        <div x-show="open" x-cloak x-transition.origin.top.duration.200ms class="space-y-1 pl-11 pr-2">
+                            <a href="{{ route('hotsupport.payment-gateway.index') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('hotsupport.payment-gateway.index') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                                Konfigurasi
+                            </a>
+                            <a href="{{ route('hotsupport.payment-gateway.topup-history') }}" class="block py-2 px-3 rounded-md text-sm transition duration-200 hover:bg-slate-700 {{ request()->routeIs('hotsupport.payment-gateway.topup-history') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                                Riwayat Topup
                             </a>
                         </div>
                     </div>
@@ -120,7 +135,7 @@
                         <span class="font-medium">My Profile</span>
                     </a>
 
-                @elseif(auth()->check() && in_array(auth()->user()->role, ['owner', 'mitra', 'mitra-reseller']))
+                @elseif(auth()->check() && in_array(auth()->user()->role, ['owner', 'owner-member', 'mitra', 'mitra-reseller']))
                     <!-- Owner / Mitra Menu -->
                     <a href="{{ route('dashboard') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('dashboard') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                         <i class="fas fa-tachometer-alt mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
@@ -258,6 +273,10 @@
                         </div>
                     </div>
 
+                    <a href="{{ route('wa_gateway.index') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('wa_gateway.*') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
+                        <i class="fab fa-whatsapp mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
+                        <span class="font-medium">WhatsApp Gateway</span>
+                    </a>
                     <a href="{{ route('settings') }}" class="flex items-center py-2.5 px-4 rounded-lg transition duration-200 hover:bg-slate-800 group {{ request()->routeIs('settings') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white' }}">
                         <i class="fas fa-cog mr-3 w-5 text-center group-hover:scale-110 transition-transform"></i>
                         <span class="font-medium">Settings</span>
@@ -443,7 +462,7 @@
                                         $ticketRoute = '#';
                                         if (auth()->user()->role === 'isp') {
                                             $ticketRoute = route('hotsupport.tickets.show', $ticket->id);
-                                        } elseif (auth()->user()->role === 'owner') {
+                                        } elseif (in_array(auth()->user()->role, ['owner', 'owner-member'])) {
                                             $ticketRoute = route('report.show', $ticket->id);
                                         } elseif (auth()->user()->role === 'builder') {
                                             $ticketRoute = route('builder.reports.show', $ticket->id);

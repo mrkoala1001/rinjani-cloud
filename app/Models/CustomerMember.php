@@ -22,12 +22,14 @@ class CustomerMember extends Model
         'user_id',
         'type', // MEMBER, PERUMAHAN, RESELLER
         'name',
+        'whatsapp',
         'location',
         'coordinates',
         'bill_amount',
         'paid_amount', // Not in form, but in DB
         'balance',
         'payment_date',
+        'installation_date',
         'notes',
         'app_username',
         'app_password',

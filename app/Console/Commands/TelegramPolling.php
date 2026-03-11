@@ -86,7 +86,7 @@ class TelegramPolling extends Command
                 "Cara penggunaan:\n" .
                 "1. Ketik judul artikel yang ingin dibuat\n" .
                 "2. Bot akan menghasilkan artikel lengkap + gambar\n" .
-                "3. Hasil akan tersimpan di blog depootcom.com\n\n" .
+                "3. Hasil akan tersimpan di blog depootcom.site\n\n" .
                 "Gunakan /help untuk instruksi lebih detail.";
 
         Telegram::sendMessage([
@@ -178,7 +178,7 @@ class TelegramPolling extends Command
             if ($exitCode === 0 || strpos($output, 'Error') === false) {
                 $successText = "✅ *Artikel Berhasil Dibuat!*\n\n" .
                                "*Judul:* " . ucfirst($topic) . "\n\n" .
-                               "Artikel telah disimpan dan akan muncul di blog depootcom.com";
+                               "Artikel telah disimpan dan akan muncul di blog depootcom.site";
 
                 Telegram::editMessageText([
                     'chat_id' => $chatId,
@@ -193,7 +193,7 @@ class TelegramPolling extends Command
                     'text' => "Lihat artikel:",
                     'reply_markup' => json_encode([
                         'inline_keyboard' => [[
-                            ['text' => '📰 https://depootcom.com/blog', 'url' => 'https://depootcom.com/blog']
+                            ['text' => '📰 https://depootcom.site/blog', 'url' => 'https://depootcom.site/blog']
                         ]]
                     ]),
                 ]);

@@ -23,6 +23,9 @@
         location: '',
         coordinates: '',
         bill_amount: 0,
+        payment_date: '',
+        installation_date: '',
+        whatsapp: '',
         notes: '',
         device_name: '',
         device_ip: '',
@@ -46,6 +49,9 @@
                 location: '',
                 coordinates: '',
                 bill_amount: 0,
+                payment_date: '',
+                installation_date: '',
+                whatsapp: '',
                 notes: '',
                 device_name: '',
                 device_ip: '',
@@ -92,14 +98,27 @@
             </button>
         </div>
 
-        <div class="flex items-center gap-3 w-full md:w-auto">
-             <form action="" method="GET" class="relative flex-grow md:w-80 group">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari Nama, Lokasi, IP..." 
-                       class="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none text-sm transition-all group-hover:border-slate-300">
+        <div class="flex items-center gap-2 w-full md:w-auto">
+             <form action="" method="GET" class="relative flex-grow md:w-64 group">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari..." 
+                       class="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none text-sm transition-all group-hover:border-slate-300 font-bold">
                 <i class="fas fa-search absolute left-4 top-3.5 text-slate-400 group-hover:text-blue-500 transition-colors"></i>
             </form>
-            <button @click="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl transition-all active:scale-95 text-sm flex items-center gap-2">
-                <i class="fas fa-plus"></i> <span class="hidden sm:inline">Tambah Pelanggan</span>
+            
+            <div class="flex items-center gap-2">
+                <a href="{{ route('customer.export.wa_csv', $type) }}" title="Export WA (CSV)" class="bg-green-50 hover:bg-green-100 text-green-600 p-3.5 rounded-2xl border border-green-200 transition-all active:scale-95 shadow-sm">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
+                <a href="{{ route('customer.export.excel', $type) }}" title="Export Excel" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-600 p-3.5 rounded-2xl border border-emerald-200 transition-all active:scale-95 shadow-sm">
+                    <i class="fas fa-file-excel"></i>
+                </a>
+                <a href="{{ route('customer.export.pdf', $type) }}" title="Export PDF" class="bg-red-50 hover:bg-red-100 text-red-600 p-3.5 rounded-2xl border border-red-200 transition-all active:scale-95 shadow-sm">
+                    <i class="fas fa-file-pdf"></i>
+                </a>
+            </div>
+
+            <button @click="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl transition-all active:scale-95 text-sm flex items-center gap-2 whitespace-nowrap">
+                <i class="fas fa-plus"></i> <span class="hidden xl:inline">Tambah Pelanggan</span>
             </button>
         </div>
     </div>
@@ -127,6 +146,11 @@
                                    (c.type == 'RESELLER' ? 'bg-purple-50 text-purple-600 shadow-[inset_0_0_0_1px_rgba(147,51,234,0.1)]' : 'bg-blue-50 text-blue-600 shadow-[inset_0_0_0_1px_rgba(37,99,235,0.1)]')"
                                 x-text="c.type">
                             </span>
+                            <template x-if="c.whatsapp">
+                                <div class="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-green-600">
+                                    <i class="fab fa-whatsapp"></i> <span x-text="c.whatsapp"></span>
+                                </div>
+                            </template>
                         </td>
                         <td class="px-8 py-6">
                             <div class="flex items-start gap-2">
@@ -161,6 +185,12 @@
                         </td>
                         <td class="px-8 py-6">
                             <div class="flex items-center justify-center gap-1.5">
+                                <template x-if="c.whatsapp">
+                                <a :href="'{{ route('wa_gateway.send_billing', ['id' => 'PLACEHOLDER']) }}'.replace('PLACEHOLDER', c.id)" 
+                                   class="p-2.5 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl transition shadow-sm" title="Kirim Tagihan WA">
+                                    <i class="fab fa-whatsapp text-sm"></i>
+                                </a>
+                                </template>
                                 <button @click="openModal(c, true)" class="p-2.5 bg-slate-50 text-slate-400 hover:bg-slate-900 hover:text-white rounded-xl transition shadow-sm" title="View Details">
                                     <i class="fas fa-eye text-sm"></i>
                                 </button>
@@ -265,6 +295,20 @@
                                     <div>
                                         <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Nama Lengkap</label>
                                         <input type="text" name="name" x-model="formData.name" :disabled="viewMode" required class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none disabled:bg-slate-50 transition-all placeholder:text-slate-300" placeholder="e.g. John Doe">
+                                    </div>
+                                    <div>
+                                        <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Nomor WhatsApp</label>
+                                        <input type="text" name="whatsapp" x-model="formData.whatsapp" :disabled="viewMode" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none disabled:bg-slate-50 transition-all placeholder:text-slate-300" placeholder="e.g. 628123456789">
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Tgl Pemasangan</label>
+                                            <input type="date" name="installation_date" x-model="formData.installation_date" :disabled="viewMode" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none disabled:bg-slate-50 transition-all">
+                                        </div>
+                                        <div>
+                                            <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Tgl Jatuh Tempo</label>
+                                            <input type="date" name="payment_date" x-model="formData.payment_date" :disabled="viewMode" class="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 focus:outline-none disabled:bg-slate-50 transition-all">
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="block text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1.5 ml-1">Lokasi / Alamat</label>

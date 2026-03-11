@@ -160,7 +160,16 @@ class ResellerController extends Controller
             if (!$profile) {
                 $profile = \App\Models\Reseller::create(['user_id' => $user->id, 'name' => $user->name, 'balance' => 0]);
             }
-            return view('reseller.balance', compact('profile'));
+            
+            $lastDeposit = \App\Models\BalanceHistory::where('customer_id', $user->id)
+                ->where('type', 'IN')
+                ->latest()
+                ->first();
+                
+            $totalTransactions = \App\Models\BalanceHistory::where('customer_id', $user->id)
+                ->count();
+                
+            return view('reseller.balance', compact('profile', 'lastDeposit', 'totalTransactions'));
         }
         
         // All resellers for the dropdown
@@ -307,7 +316,15 @@ class ResellerController extends Controller
             $profile = ResellerModel::create(['user_id' => $user->id, 'name' => $user->name, 'balance' => 0]);
         }
         
-        return view('reseller.balance', compact('profile'));
+        $lastDeposit = \App\Models\BalanceHistory::where('customer_id', $user->id)
+            ->where('type', 'IN')
+            ->latest()
+            ->first();
+            
+        $totalTransactions = \App\Models\BalanceHistory::where('customer_id', $user->id)
+            ->count();
+            
+        return view('reseller.balance', compact('profile', 'lastDeposit', 'totalTransactions'));
     }
 
     public function balanceHistory()

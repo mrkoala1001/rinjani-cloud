@@ -19,7 +19,7 @@ use App\Http\Controllers\TelegramController;
 // --------------------------------------------------------------------------
 // DPOTCOM.COM - MAIN LANDING PAGE
 // --------------------------------------------------------------------------
-Route::domain('depootcom.com')->group(function () {
+Route::domain('depootcom.site')->group(function () {
     Route::get('/', function() {
         \Illuminate\Support\Facades\Log::info('Depootcom Landing Closure hit');
         $services = [
@@ -29,7 +29,7 @@ Route::domain('depootcom.com')->group(function () {
         ];
         $projects = [
             ['name' => 'Rinsride', 'description' => 'Layanan rental motor modern dengan sistem manajemen armada yang terintegrasi.', 'url' => 'https://rinsride.com', 'tag' => 'Automotive Solution'],
-            ['name' => 'Hotpot Management', 'description' => 'Solusi manajemen hotspot dan billing otomatis untuk ISP, Cafe, dan RT-RW Net.', 'url' => 'http://hotpot.depootcom.com', 'tag' => 'Network Management']
+            ['name' => 'Hotpot Management', 'description' => 'Solusi manajemen hotspot dan billing otomatis untuk ISP, Cafe, dan RT-RW Net.', 'url' => 'http://hotpot.depootcom.site', 'tag' => 'Network Management']
         ];
         return view('depootcom.index', compact('services', 'projects'));
     })->name('depootcom.landing');
@@ -55,14 +55,14 @@ Route::domain('depootcom.com')->group(function () {
     });
 });
 
-Route::domain('www.depootcom.com')->group(function () {
+Route::domain('www.depootcom.site')->group(function () {
     Route::get('/', function() { return redirect()->route('depootcom.landing'); });
 });
 
 // --------------------------------------------------------------------------
 // HOTPOT.DEPOOTCOM.COM - APPLICATION (HOTPOT)
 // --------------------------------------------------------------------------
-Route::domain('hotpot.depootcom.com')->group(function () {
+Route::domain('hotpot.depootcom.site')->group(function () {
     
     // PWA Manifest for Owner
     Route::get('/manifest-owner.json', function() {
@@ -127,6 +127,10 @@ Route::domain('hotpot.depootcom.com')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/logout', [AuthController::class, 'logout']); // Fallback for easier logout
 
+    // Google Socialite Routes
+    Route::get('/auth/google', [\App\Http\Controllers\GoogleAuthController::class, 'redirect'])->name('google.login');
+    Route::get('/auth/google/callback', [\App\Http\Controllers\GoogleAuthController::class, 'callback'])->name('google.callback');
+
     // Authenticated Routes
     Route::middleware('auth')->group(function () {
         
@@ -174,6 +178,12 @@ Route::domain('hotpot.depootcom.com')->group(function () {
              Route::post('/mitra-reseller/pppoe-profiles/{id}', [HotSupportController::class, 'storeMitraResellerPppoeProfile'])->name('mitra-reseller.pppoe-profiles.store');
              Route::post('/mitra-reseller/pppoe-profiles/{id}/update', [HotSupportController::class, 'updateMitraResellerPppoeProfile'])->name('mitra-reseller.pppoe-profiles.update');
              Route::get('/mitra-reseller/pppoe-profiles/{id}/delete', [HotSupportController::class, 'deleteMitraResellerPppoeProfile'])->name('mitra-reseller.pppoe-profiles.delete');
+
+             // Payment Gateway Management
+             Route::get('/payment-gateway', [HotSupportController::class, 'paymentGatewayIndex'])->name('payment-gateway.index');
+             Route::post('/payment-gateway', [HotSupportController::class, 'paymentGatewayUpdate'])->name('payment-gateway.update');
+             Route::get('/payment-gateway/topup-history', [HotSupportController::class, 'topupHistory'])->name('payment-gateway.topup-history');
+             Route::post('/payment-gateway/simulate/{id}', [HotSupportController::class, 'simulateTopup'])->name('payment-gateway.simulate');
 
              // Report & Ticketing System
              Route::get('/tickets', [HotSupportController::class, 'ticketIndex'])->name('tickets.index');
@@ -300,6 +310,23 @@ Route::domain('hotpot.depootcom.com')->group(function () {
                 Route::delete('/{id}', [ResellerController::class, 'destroy'])->name('destroy');
             });
 
+            // Customer Management Exports
+            Route::get('/customer/export/excel/{type?}', [CustomerController::class, 'exportExcel'])->name('customer.export.excel');
+            Route::get('/customer/export/pdf/{type?}', [CustomerController::class, 'exportPdf'])->name('customer.export.pdf');
+            Route::get('/customer/export/wa-csv/{type?}', [CustomerController::class, 'exportWaCsv'])->name('customer.export.wa_csv');
+
+            // WhatsApp Gateway Settings
+            Route::get('/wa-gateway', [\App\Http\Controllers\WaGatewayController::class, 'index'])->name('wa_gateway.index');
+            Route::post('/wa-gateway', [\App\Http\Controllers\WaGatewayController::class, 'update'])->name('wa_gateway.update');
+            Route::post('/wa-gateway/test', [\App\Http\Controllers\WaGatewayController::class, 'testConnection'])->name('wa_gateway.test');
+            Route::get('/wa-gateway/send-billing/{id}', [\App\Http\Controllers\WaGatewayController::class, 'sendBilling'])->name('wa_gateway.send_billing');
+            Route::post('/wa-gateway/broadcast', [\App\Http\Controllers\WaGatewayController::class, 'sendBroadcast'])->name('wa_gateway.send_broadcast');
+
+            // Reseller Topup (Self)
+            Route::get('/topup', [\App\Http\Controllers\Reseller\TopupController::class, 'index'])->name('reseller.topup.index');
+            Route::post('/topup', [\App\Http\Controllers\Reseller\TopupController::class, 'store'])->name('reseller.topup.store');
+            Route::get('/topup/{reference}', [\App\Http\Controllers\Reseller\TopupController::class, 'show'])->name('reseller.topup.show');
+
             // Settings
             Route::get('/settings', [SettingController::class, 'index'])->name('settings');
             Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
@@ -387,26 +414,33 @@ Route::prefix('app')->group(function () {
         Route::get('/transactions', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'transactions'])->name('customer_app.reseller.transactions');
         Route::get('/profile', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'profile'])->name('customer_app.reseller.profile');
         Route::post('/profile', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'updateProfile'])->name('customer_app.reseller.profile.update');
-        Route::get('/balance-history', [\App\Http\Controllers\CustomerApp\DashboardController::class, 'balanceLogs'])->name('customer_app.reseller.balance_logs');
-        Route::get('/topup', [\App\Http\Controllers\CustomerApp\TopupController::class, 'index'])->name('customer_app.reseller.topup');
-        Route::post('/topup', [\App\Http\Controllers\CustomerApp\TopupController::class, 'store'])->name('customer_app.reseller.topup.store');
-        Route::get('/topup/finish', [\App\Http\Controllers\CustomerApp\TopupController::class, 'finish'])->name('customer_app.reseller.topup.finish');
+        
+        // Topup Routes
+        Route::get('/topup', [\App\Http\Controllers\CustomerApp\TopupController::class, 'index'])->name('customer_app.topup.index');
+        Route::post('/topup', [\App\Http\Controllers\CustomerApp\TopupController::class, 'store'])->name('customer_app.topup.store');
+        Route::get('/topup/{reference}', [\App\Http\Controllers\CustomerApp\TopupController::class, 'show'])->name('customer_app.topup.show');
+
+        // Ticket / Report Routes
+        Route::get('/tickets', [\App\Http\Controllers\CustomerApp\ReportController::class, 'index'])->name('customer_app.tickets');
+        Route::get('/tickets/create', [\App\Http\Controllers\CustomerApp\ReportController::class, 'create'])->name('customer_app.tickets.create');
+        Route::post('/tickets', [\App\Http\Controllers\CustomerApp\ReportController::class, 'store'])->name('customer_app.tickets.store');
     });
 });
 
-// Pakasir Callback (Must be outside auth and excluded from CSRF)
+// Payment Callbacks (Outside Auth, Exclude from CSRF)
 Route::post('/pakasir/callback', [\App\Http\Controllers\CustomerApp\TopupController::class, 'callback'])->name('pakasir.callback');
+Route::post('/topup/callback', [\App\Http\Controllers\TopupCallbackController::class, 'handle'])->name('tripay.callback');
 
-Route::domain('www.hotpot.depootcom.com')->group(function () {
+Route::domain('www.hotpot.depootcom.site')->group(function () {
     Route::get('/{any?}', function($any = '') { 
-        return redirect('http://hotpot.depootcom.com/' . $any); 
+        return redirect('http://hotpot.depootcom.site/' . $any); 
     })->where('any', '.*');
 });
 
 // --------------------------------------------------------------------------
 // P3POT.DEPOOTCOM.COM - P3POT RADIUS BILLING
 // --------------------------------------------------------------------------
-Route::domain('p3pot.depootcom.com')->group(function () {
+Route::domain('p3pot.depootcom.site')->group(function () {
     Route::get('/', function() {
         return view('p3pot.index');
     })->name('p3pot.landing');

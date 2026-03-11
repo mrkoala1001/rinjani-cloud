@@ -3,4 +3,4 @@ Disallow: /build/
 Disallow: /vendor/
 Disallow: /storage/
 
-Sitemap: https://depootcom.com/sitemap.xml
+Sitemap: https://depootcom.site/sitemap.xml

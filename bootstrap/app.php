@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'api/*',
             'pakasir/callback',
+            'topup/callback',
             'telegram/webhook',
         ]);
         $middleware->web(prepend: [

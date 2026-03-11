@@ -1,9 +1,9 @@
 # P3POT RADIUS BILLING CREDENTIALS
 
-This file contains the credentials for the P3POT system located at `p3pot.depootcom.com`.
+This file contains the credentials for the P3POT system located at `p3pot.depootcom.site`.
 
 ## Access URL
-- **Login Page**: https://p3pot.depootcom.com/login
+- **Login Page**: https://p3pot.depootcom.site/login
 
 ## Test Accounts
 | Role | Username | Password |

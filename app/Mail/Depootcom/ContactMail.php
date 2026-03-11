@@ -27,7 +27,7 @@ class ContactMail extends Mailable
     {
         return $this->subject('[Depootcom] Kontak dari: ' . $this->data['subject'])
                     ->html("
-                        <h3>Pesan Baru dari depootcom.com</h3>
+                        <h3>Pesan Baru dari depootcom.site</h3>
                         <p><strong>Nama:</strong> {$this->data['name']}</p>
                         <p><strong>Email:</strong> {$this->data['email']}</p>
                         <p><strong>Subjek:</strong> {$this->data['subject']}</p>

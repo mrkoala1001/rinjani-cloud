@@ -34,21 +34,21 @@ class OriginAccessMiddleware
         }
 
         // Hotpot App Restriction
-        if (str_contains($host, 'hotpot.depootcom.com')) {
+        if (str_contains($host, 'hotpot.depootcom.site')) {
             if (!in_array($origin, ['hotpot', 'semua'])) {
                 abort(403, 'Akses ditolak. Akun Anda tidak memiliki akses ke aplikasi Hotpot.');
             }
         }
 
         // P3POT App Restriction
-        if (str_contains($host, 'p3pot.depootcom.com')) {
+        if (str_contains($host, 'p3pot.depootcom.site')) {
             if (!in_array($origin, ['p3pot', 'semua'])) {
                 abort(403, 'Akses ditolak. Akun Anda tidak memiliki akses ke aplikasi P3POT.');
             }
         }
 
         // Blog / Landing Restriction (if applicable)
-        if ($host === 'depootcom.com' || $host === 'www.depootcom.com') {
+        if ($host === 'depootcom.site' || $host === 'www.depootcom.site') {
             // Usually blog is public, but if there's admin area:
             if ($request->is('blog/admin*') || $request->is('admin*')) {
                 if (!in_array($origin, ['blog', 'semua'])) {

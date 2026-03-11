@@ -29,9 +29,20 @@ class DashboardController extends Controller
             'password' => 'required',
         ]);
 
+        // Method 1: App Credentials (Primary)
         $customer = \App\Models\CustomerMember::where('app_username', $request->username)
             ->where('app_password', $request->password)
             ->first();
+
+        // Method 2: Device Credentials (Secondary, specifically for PERUMAHAN/PPPoE users)
+        if (!$customer) {
+            $customer = \App\Models\CustomerMember::where('type', 'PERUMAHAN')
+                ->where(function($q) use ($request) {
+                    $q->where('device_username', $request->username)
+                      ->where('device_password', $request->password);
+                })
+                ->first();
+        }
 
         if ($customer) {
             session(['customer_id' => $customer->id]);
@@ -407,7 +418,46 @@ class DashboardController extends Controller
 
     protected function pppoeDashboard($customer)
     {
-        return view('customer_app.dashboards.pppoe', compact('customer'));
+        $status = 'Offline';
+        $mkInfo = null;
+
+        $owner = User::find($customer->user_id);
+        $mkConfig = $owner->mikrotikConfigs->first();
+        $ispName = $owner->name;
+
+        // Fetch user reports (Laporan Gangguan)
+        $reports = \App\Models\Report::where('sender_id', $customer->id)
+            ->where('sender_type', \App\Models\CustomerMember::class)
+            ->latest()
+            ->take(5)
+            ->get();
+
+        // Placeholder for News (Berita)
+        $news = []; // Could be fetched from a table later
+
+        if ($mkConfig && ($customer->device_username || $customer->app_username)) {
+            try {
+                $client = new \RouterOS\Client([
+                    'host' => $mkConfig->host,
+                    'user' => $mkConfig->user,
+                    'pass' => $mkConfig->pass,
+                    'port' => (int)($mkConfig->port ?? 8728),
+                    'timeout' => 3,
+                ]);
+
+                $username = $customer->device_username ?: $customer->app_username;
+                $active = $client->query((new \RouterOS\Query('/ppp/active/print'))->equal('name', $username))->read();
+
+                if (!empty($active)) {
+                    $status = 'Online';
+                    $mkInfo = $active[0];
+                }
+            } catch (\Exception $e) {
+                \Log::error("PPPoE Dashboard Error: " . $e->getMessage());
+            }
+        }
+
+        return view('customer_app.dashboards.pppoe', compact('customer', 'status', 'mkInfo', 'ispName', 'reports', 'news'));
     }
 
     protected function memberDashboard($customer)

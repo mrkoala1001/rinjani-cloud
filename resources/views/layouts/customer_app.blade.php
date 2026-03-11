@@ -81,11 +81,11 @@
                 </div>
                 <span class="text-[7px] font-black uppercase tracking-tighter leading-none">Riwayat</span>
             </a>
-            <a href="{{ route('customer_app.reseller.balance_logs') }}" class="flex-1 flex flex-col items-center justify-center gap-1 py-1 {{ request()->routeIs('customer_app.reseller.balance_logs') ? 'text-indigo-600' : 'text-slate-400' }}">
+            <a href="{{ route('customer_app.tickets') }}" class="flex-1 flex flex-col items-center justify-center gap-1 py-1 {{ request()->routeIs('customer_app.tickets*') ? 'text-indigo-600' : 'text-slate-400' }}">
                 <div class="h-6 flex items-center justify-center">
-                    <i class="fas fa-wallet text-lg"></i>
+                    <i class="fas fa-headset text-lg"></i>
                 </div>
-                <span class="text-[7px] font-black uppercase tracking-tighter leading-none">Saldo</span>
+                <span class="text-[7px] font-black uppercase tracking-tighter leading-none">Tiket</span>
             </a>
             <a href="{{ route('customer_app.reseller.profile') }}" class="flex-1 flex flex-col items-center justify-center gap-1 py-1 {{ request()->routeIs('customer_app.reseller.profile') ? 'text-indigo-600' : 'text-slate-400' }}">
                 <div class="h-6 flex items-center justify-center">

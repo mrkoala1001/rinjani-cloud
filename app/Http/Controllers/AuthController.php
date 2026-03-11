@@ -8,7 +8,7 @@ class AuthController extends Controller
 {
     public function showLogin()
     {
-        if (request()->getHost() === 'depootcom.com' || request()->getHost() === 'www.depootcom.com') {
+        if (request()->getHost() === 'depootcom.site' || request()->getHost() === 'www.depootcom.site') {
             return view('depootcom.admin.blog.login');
         }
         return view('auth.login');
@@ -53,7 +53,7 @@ class AuthController extends Controller
         $request->session()->regenerate();
 
         // Handle Depootcom Admin Redirection
-        if ($request->getHost() === 'depootcom.com' || $request->getHost() === 'www.depootcom.com') {
+        if ($request->getHost() === 'depootcom.site' || $request->getHost() === 'www.depootcom.site') {
             if (auth()->user()->role === 'builder') {
                 return redirect()->route('depootcom.admin.dashboard');
             }
@@ -73,7 +73,7 @@ class AuthController extends Controller
 
         // Origin-based redirection for owners/others
         if (auth()->user()->origin === 'p3pot') {
-            if (auth()->user()->role === 'owner') {
+            if (in_array(auth()->user()->role, ['owner', 'owner-member'])) {
                 return redirect()->route('p3pot.owner.dashboard'); 
             }
         }

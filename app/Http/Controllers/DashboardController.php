@@ -120,6 +120,10 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
+        if ($user->role !== 'owner-member') {
+            return redirect()->back()->withErrors('Akses ditolak. Fitur ini hanya tersedia untuk pengguna mandiri (owner-member).');
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users,username,' . $user->id,
