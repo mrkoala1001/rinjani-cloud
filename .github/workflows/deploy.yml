@@ -20,17 +20,20 @@ jobs:
       - name: Install Dependencies (PHP)
         run: |
           cd /var/www/hotpot
-          composer install --no-dev --optimize-autoloader
+          export PATH=$PATH:/usr/local/bin:/usr/bin
+          composer install --no-dev --optimize-autoloader || php /usr/local/bin/composer install --no-dev --optimize-autoloader
 
       - name: Build Assets
         run: |
           cd /var/www/hotpot
+          export PATH=$PATH:/usr/local/bin:/usr/bin
           npm install
           npm run build
 
       - name: Run Migrations
         run: |
           cd /var/www/hotpot
+          export PATH=$PATH:/usr/local/bin:/usr/bin
           php artisan migrate --force
 
       - name: Clear Cache
