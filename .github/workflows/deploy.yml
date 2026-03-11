@@ -2,7 +2,7 @@ name: Deploy to Rinja-Cloud
 
 on:
   push:
-    branches: [ "feature/wan-static-and-pppoe-meta", "main" ]
+    branches: [ "*" ]
 
 jobs:
   deploy:
