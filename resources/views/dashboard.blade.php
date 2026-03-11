@@ -206,7 +206,7 @@
                         <span class="text-xs font-black text-slate-800">{{ number_format($distCount) }} / {{ $maxDist == -1 ? '∞' : number_format($maxDist) }}</span>
                     </div>
                     <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        @php $distPercent = ($maxDist == -1) ? 5 : ($distCount / $maxDist * 100); @endphp
+                        @php $distPercent = ($maxDist == -1) ? 5 : (($maxDist > 0) ? ($distCount / $maxDist * 100) : 0); @endphp
                         <div class="h-full bg-orange-500 rounded-full" style="width: {{ min(100, $distPercent) }}%"></div>
                     </div>
                     <p class="text-[9px] text-slate-400 font-medium tracking-tight leading-relaxed">Jumlah total voucher yang sudah didistribusikan ke reseller.</p>
@@ -231,7 +231,7 @@
                         <span class="text-xs font-black text-slate-800">{{ number_format($custCount) }} / {{ $maxCust == -1 ? '∞' : number_format($maxCust) }}</span>
                     </div>
                     <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-                        @php $custPercent = ($maxCust == -1) ? 5 : ($custCount / $maxCust * 100); @endphp
+                        @php $custPercent = ($maxCust == -1) ? 5 : (($maxCust > 0) ? ($custCount / $maxCust * 100) : 0); @endphp
                         <div class="h-full bg-emerald-500 rounded-full" style="width: {{ min(100, $custPercent) }}%"></div>
                     </div>
                     <p class="text-[9px] text-slate-400 font-medium tracking-tight leading-relaxed">Jumlah data pelanggan yang tersimpan di database CRM.</p>
