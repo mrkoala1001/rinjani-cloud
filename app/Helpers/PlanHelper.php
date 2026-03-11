@@ -20,6 +20,7 @@ class PlanHelper
                     'voucher_distribution_max' => 1000,
                     'voucher_online_max' => 50,
                     'pppoe_active_max' => 50,
+                    'customer_max' => 0,
                 ]
             ],
             'medium' => [
