@@ -114,6 +114,26 @@ class PppoeController extends Controller
         $client = $this->getClient();
         if (!$client) return redirect()->back()->with('error', 'Router not connected.');
 
+        // QUOTA CHECK
+        $user = auth()->user();
+        $plan = $user->plan ?? 'basic';
+        if ($plan !== 'basic' && (!$user->plan_expires_at || $user->plan_expires_at->isPast())) {
+            $plan = 'basic';
+        }
+        $planConfig = \App\Helpers\PlanHelper::getPlanConfig($plan);
+        $maxSecrets = $planConfig['quotas']['pppoe_active_max'] ?? 0;
+
+        if ($maxSecrets != -1) {
+            try {
+                $currentSecrets = $client->query('/ppp/secret/print')->read();
+                if (count($currentSecrets) >= $maxSecrets) {
+                    return redirect()->back()->with('error', 'Batas maksimal PPPoE Secret untuk paket ' . $planConfig['name'] . ' adalah ' . $maxSecrets . '. Silakan upgrade.');
+                }
+            } catch (Exception $e) {
+                // Ignore error for check, but continue
+            }
+        }
+
         try {
             $data = [
                 'name' => $request->name,

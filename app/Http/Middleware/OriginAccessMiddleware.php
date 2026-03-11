@@ -40,12 +40,6 @@ class OriginAccessMiddleware
             }
         }
 
-        // P3POT App Restriction
-        if (str_contains($host, 'p3pot.depootcom.site')) {
-            if (!in_array($origin, ['p3pot', 'semua'])) {
-                abort(403, 'Akses ditolak. Akun Anda tidak memiliki akses ke aplikasi P3POT.');
-            }
-        }
 
         // Blog / Landing Restriction (if applicable)
         if ($host === 'depootcom.site' || $host === 'www.depootcom.site') {

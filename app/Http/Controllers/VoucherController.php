@@ -137,12 +137,23 @@ class VoucherController extends Controller
         set_time_limit(0);
         ini_set('memory_limit', '512M');
 
+        $user = auth()->user();
+        $plan = $user->plan ?? 'basic';
+        // Expired check falls back to basic for quota
+        if ($plan !== 'basic' && (!$user->plan_expires_at || $user->plan_expires_at->isPast())) {
+            $plan = 'basic';
+        }
+        $planConfig = \App\Helpers\PlanHelper::getPlanConfig($plan);
+        $maxQty = $planConfig['quotas']['voucher_generate_max'];
+
         $request->validate([
-            'qty' => 'required|integer|min:1|max:1000',
+            'qty' => 'required|integer|min:1|max:' . ($maxQty == -1 ? 10000 : $maxQty),
             'server' => 'required',
             'user_mode' => 'required|in:up,u+p',
             'user_length' => 'required|integer|min:3|max:12',
             'profile' => 'required',
+        ], [
+            'qty.max' => 'Batas maksimal generate voucher untuk paket ' . $planConfig['name'] . ' adalah ' . $maxQty . ' pcs.'
         ]);
 
         // ATOMIC LOCK: Prevent duplicate submissions within 30 seconds
@@ -201,7 +212,17 @@ class VoucherController extends Controller
             }
         }
 
-        $batchId = 'BATCH-' . now()->format('YmdHis') . '-' . strtoupper(substr(md5(uniqid()), 0, 6));
+        // DISTRIBUTION QUOTA CHECK (if reseller_id is provided and not Admin)
+        $maxDist = $planConfig['quotas']['voucher_distribution_max'];
+        if ($resellerId && $resellerId != 0 && $maxDist != -1) {
+            $currentDistCount = \App\Models\BillingHistory::where('user_id', auth()->id())
+                ->where('reseller_id', '!=', 0)
+                ->whereNotNull('reseller_id')
+                ->count();
+            if (($currentDistCount + $qty) > $maxDist) {
+                return back()->with('error', 'Batas maksimal distribusi voucher untuk paket ' . $planConfig['name'] . ' adalah ' . number_format($maxDist) . '. Total distribusi Anda saat ini: ' . number_format($currentDistCount) . '.')->withInput();
+            }
+        }
 
         // Balance Check for mitra-reseller
         if (auth()->user()->role === 'mitra-reseller') {

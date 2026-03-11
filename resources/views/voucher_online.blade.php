@@ -49,8 +49,27 @@
 }">
     <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
+            @php
+                $user = auth()->user();
+                $plan = $user->plan ?? 'basic';
+                $isExpired = $plan !== 'basic' && (!$user->plan_expires_at || $user->plan_expires_at->isPast());
+                $pConfig = \App\Helpers\PlanHelper::getPlanConfig($isExpired ? 'basic' : $plan);
+                $maxOnline = $pConfig['quotas']['voucher_online_max'];
+                $currentOnline = count($activeUsers ?? []);
+                $onlineQuotaReached = ($maxOnline != -1 && $currentOnline >= $maxOnline);
+            @endphp
             <h2 class="text-2xl font-bold text-gray-800">Hotspot Active Users</h2>
-            <p class="text-sm text-gray-500">Total Online: <span class="font-bold text-blue-600" x-text="users.length"></span> User</p>
+            <div class="flex items-center gap-2 mt-1">
+                <p class="text-sm text-gray-500">Total Online: <span class="font-bold text-blue-600" x-text="users.length"></span> User</p>
+                <span class="text-[9px] font-black px-1.5 py-0.5 rounded border {{ $onlineQuotaReached ? 'border-red-200 bg-red-50 text-red-600' : 'border-blue-200 bg-blue-50 text-blue-600' }}">
+                    LIMIT PLAN: {{ $maxOnline == -1 ? 'UNLIMITED' : $maxOnline }}
+                </span>
+            </div>
+            @if($onlineQuotaReached)
+                <p class="text-[10px] text-red-500 font-bold mt-1 uppercase tracking-tighter">
+                    <i class="fas fa-exclamation-circle mr-1"></i> Kuota online plan {{ strtoupper($pConfig['name']) }} sudah penuh!
+                </p>
+            @endif
         </div>
         <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto">
             <div class="relative w-full md:w-64">

@@ -588,7 +588,19 @@
                 
                      <a href="{{ route('profile') }}" class="flex items-center gap-3 pl-4 border-l border-slate-200 hover:bg-slate-50 transition p-2 rounded-lg cursor-pointer">
                         <div class="text-right hidden sm:block">
-                            <div class="text-sm font-bold text-slate-700 leading-tight">{{ auth()->user()->name }}</div>
+                            <div class="flex items-center justify-end gap-2">
+                                <div class="text-sm font-bold text-slate-700 leading-tight">{{ auth()->user()->name }}</div>
+                                @php
+                                    $plan = auth()->user()->plan ?? 'basic';
+                                    $isExpired = $plan !== 'basic' && (!auth()->user()->plan_expires_at || auth()->user()->plan_expires_at->isPast());
+                                    $planConfig = \App\Helpers\PlanHelper::getPlanConfig($isExpired ? 'basic' : $plan);
+                                @endphp
+                                <span class="text-[9px] font-black px-1.5 py-0.5 rounded border border-{{ $planConfig['color'] }}-200 bg-{{ $planConfig['color'] }}-50 text-{{ $planConfig['color'] }}-600 flex items-center gap-1 shadow-sm">
+                                    <i class="fas fa-crown text-[8px]"></i>
+                                    {{ strtoupper($planConfig['name']) }}
+                                    @if($isExpired) (EXPIRED) @endif
+                                </span>
+                            </div>
                             <div class="text-[10px] font-bold uppercase tracking-wide {{ auth()->user()->role === 'isp' ? 'text-blue-500' : (auth()->user()->role === 'builder' ? 'text-indigo-600' : (auth()->user()->role === 'reseller' ? 'text-green-500' : 'text-slate-500')) }}">
                                 {{ auth()->user()->role === 'isp' ? 'SUPERDUPER ADMIN' : (auth()->user()->role === 'builder' ? 'BUILDER' : (auth()->user()->role === 'reseller' ? 'RESELLER' : 'OWNER')) }}
                             </div>

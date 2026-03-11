@@ -61,12 +61,15 @@ class HotSupportController extends Controller
     public function impersonate($id)
     {
         $user = User::where('created_by', auth()->id())->findOrFail($id);
-        
-        // Store original ID
-        session(['impersonated_by' => auth()->id()]);
-        
-        // Login as owner
-        auth()->login($user);
+    
+    \Log::info("User " . auth()->user()->username . " (ISP) began impersonating " . $user->username);
+
+    // Store original ID
+    session(['impersonated_by' => auth()->id()]);
+    session(['impersonator_name' => auth()->user()->name]);
+    
+    // Login as owner
+    auth()->login($user);
         
         return redirect()->route('dashboard')->with('success', "Logged in as {$user->name}");
     }

@@ -50,7 +50,6 @@
                     <select name="role" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                         <option value="isp" {{ old('role') == 'isp' ? 'selected' : '' }}>ISP (Superduper Admin)</option>
                         <option value="builder" {{ old('role') == 'builder' ? 'selected' : '' }}>Builder (Developer)</option>
-                        <option value="owner" {{ old('role') == 'owner' ? 'selected' : '' }}>Owner (Mitra)</option>
                     </select>
                     @error('role') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -64,9 +63,8 @@
                     <label class="block text-sm font-medium text-gray-300 mb-2">Akses Aplikasi (Origin)</label>
                     <select name="origin" class="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-2.5 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
                         <option value="hotpot" {{ old('origin') == 'hotpot' ? 'selected' : '' }}>Hotpot (Only)</option>
-                        <option value="p3pot" {{ old('origin') == 'p3pot' ? 'selected' : '' }}>P3POT (Only)</option>
                         <option value="blog" {{ old('origin') == 'blog' ? 'selected' : '' }}>Blog / Landing</option>
-                        <option value="semua" {{ old('origin', 'semua') == 'semua' ? 'selected' : '' }}>Semua (Hotpot + P3POT + Blog)</option>
+                        <option value="semua" {{ old('origin', 'semua') == 'semua' ? 'selected' : '' }}>Semua Aplikasi</option>
                     </select>
                     @error('origin') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>

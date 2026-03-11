@@ -44,10 +44,22 @@
                         </select>
                     </div>
 
-                    <!-- Quantity -->
+                     <!-- Quantity -->
+                    @php
+                        $user = auth()->user();
+                        $plan = $user->plan ?? 'basic';
+                        $isExpired = $plan !== 'basic' && (!$user->plan_expires_at || $user->plan_expires_at->isPast());
+                        $pConfig = \App\Helpers\PlanHelper::getPlanConfig($isExpired ? 'basic' : $plan);
+                        $maxGen = $pConfig['quotas']['voucher_generate_max'];
+                    @endphp
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-2">Jumlah Voucher (Qty)</label>
-                        <input type="number" name="qty" required min="1" max="1000" value="{{ old('qty', 10) }}" 
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-xs font-bold text-gray-600 uppercase">Jumlah Voucher (Qty)</label>
+                            <span class="text-[9px] font-black px-1.5 py-0.5 rounded border border-blue-200 bg-blue-50 text-blue-600">
+                                LIMIT PLAN: {{ $maxGen == -1 ? 'UNLIMITED' : $maxGen . ' PC' }}
+                            </span>
+                        </div>
+                        <input type="number" name="qty" required min="1" max="{{ $maxGen == -1 ? 1000 : $maxGen }}" value="{{ old('qty', min(10, $maxGen == -1 ? 1000 : $maxGen)) }}" 
                                class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm font-bold focus:border-blue-500 focus:outline-none transition-all"
                                placeholder="Contoh: 50">
                     </div>
@@ -132,14 +144,35 @@
 
                     <!-- Reseller (Only for Management Roles) -->
                     @if(in_array(auth()->user()->role, ['owner', 'mitra', 'mitra-reseller', 'isp', 'builder']))
-                    <div class="pt-2">
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-2">Ditujukan untuk Reseller</label>
-                        <select name="reseller_id" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none bg-white">
+                    <div class="pt-4 border-t border-dashed">
+                        @php
+                            $maxDist = $pConfig['quotas']['voucher_distribution_max'];
+                            $currentDist = \App\Models\VoucherBatch::where('user_id', auth()->id())->where('reseller_id', '!=', 0)->sum('qty');
+                            $distQuotaReached = ($maxDist != -1 && $currentDist >= $maxDist);
+                        @endphp
+                        
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-xs font-bold text-gray-600 uppercase">Ditujukan untuk Reseller</label>
+                            <span class="text-[9px] font-black px-1.5 py-0.5 rounded border {{ $distQuotaReached ? 'border-red-200 bg-red-50 text-red-600' : 'border-purple-200 bg-purple-50 text-purple-600' }}">
+                                DISTRIBUSI: {{ $currentDist }} / {{ $maxDist == -1 ? 'UNLIMITED' : $maxDist }}
+                            </span>
+                        </div>
+
+                        @if($distQuotaReached)
+                            <div class="bg-red-50 text-red-600 text-[10px] p-3 rounded-xl border border-red-100 mb-3 font-bold">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Kuota distribusi plan Anda sudah penuh. Anda tidak dapat mendistribusikan voucher ke reseller baru.
+                            </div>
+                        @endif
+
+                        <select name="reseller_id" class="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none bg-white {{ $distQuotaReached ? 'opacity-50 pointer-events-none' : '' }}" {{ $distQuotaReached ? 'disabled' : '' }}>
                             <option value="0">Default (Admin)</option>
                             @foreach ($resellers as $res)
                                 <option value="{{ $res->id }}" {{ old('reseller_id') == $res->id ? 'selected' : '' }}>{{ $res->name }}</option>
                             @endforeach
                         </select>
+                        @if($distQuotaReached)
+                            <input type="hidden" name="reseller_id" value="0">
+                        @endif
                     </div>
                     @else
                         <input type="hidden" name="reseller_id" value="{{ auth()->id() }}">

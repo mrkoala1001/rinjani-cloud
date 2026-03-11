@@ -55,6 +55,22 @@ class CustomerController extends Controller
             CustomerMember::where('id', $request->id)->update($data);
             $msg = 'Data pelanggan diperbarui.';
         } else {
+            // QUOTA CHECK
+            $user = auth()->user();
+            $plan = $user->plan ?? 'basic';
+            if ($plan !== 'basic' && (!$user->plan_expires_at || $user->plan_expires_at->isPast())) {
+                $plan = 'basic';
+            }
+            $planConfig = \App\Helpers\PlanHelper::getPlanConfig($plan);
+            $maxCustomers = $planConfig['quotas']['customer_max'] ?? 0;
+
+            if ($maxCustomers != -1) {
+                $currentCount = CustomerMember::where('user_id', auth()->id())->count();
+                if ($currentCount >= $maxCustomers) {
+                    return redirect()->back()->with('error', 'Batas maksimal pelanggan untuk paket ' . $planConfig['name'] . ' adalah ' . $maxCustomers . '. Silakan upgrade.');
+                }
+            }
+
             CustomerMember::create($data);
             $msg = 'Pelanggan baru ditambahkan.';
         }

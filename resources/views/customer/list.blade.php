@@ -117,9 +117,30 @@
                 </a>
             </div>
 
-            <button @click="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl transition-all active:scale-95 text-sm flex items-center gap-2 whitespace-nowrap">
-                <i class="fas fa-plus"></i> <span class="hidden xl:inline">Tambah Pelanggan</span>
-            </button>
+            @php
+                $user = auth()->user();
+                $plan = $user->plan ?? 'basic';
+                $isExpired = $plan !== 'basic' && (!$user->plan_expires_at || $user->plan_expires_at->isPast());
+                $pConfig = \App\Helpers\PlanHelper::getPlanConfig($isExpired ? 'basic' : $plan);
+                $maxCust = $pConfig['quotas']['customer_max'];
+                $currentCust = \App\Models\CustomerMember::where('user_id', auth()->id())->count();
+                $quotaReached = ($maxCust != -1 && $currentCust >= $maxCust);
+            @endphp
+
+            @if($quotaReached)
+                <div class="group relative">
+                    <button disabled class="bg-gray-400 text-white font-black py-3 px-6 rounded-2xl shadow-md cursor-not-allowed text-sm flex items-center gap-2 whitespace-nowrap opacity-70">
+                        <i class="fas fa-lock text-xs"></i> <span>Kuota Penuh</span>
+                    </button>
+                    <div class="absolute bottom-full right-0 mb-2 hidden group-hover:block w-48 bg-slate-900 text-white text-[10px] font-bold p-3 rounded-xl shadow-2xl z-50">
+                        Limit Database Pelanggan Plan {{ strtoupper($pConfig['name']) }} ({{ $maxCust }} data) sudah penuh @if(!$isExpired). Silakan upgrade plan untuk menambah data. @else (Plan Expired). @endif
+                    </div>
+                </div>
+            @else
+                <button @click="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl transition-all active:scale-95 text-sm flex items-center gap-2 whitespace-nowrap">
+                    <i class="fas fa-plus"></i> <span class="hidden xl:inline">Tambah Pelanggan</span>
+                </button>
+            @endif
         </div>
     </div>
 

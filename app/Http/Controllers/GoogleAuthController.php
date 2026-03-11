@@ -56,9 +56,6 @@ class GoogleAuthController extends Controller
             if ($user->role === 'reseller') {
                 return redirect()->route('reseller.dashboard');
             }
-            if ($user->origin === 'p3pot') {
-                return redirect()->route('p3pot.owner.dashboard'); 
-            }
             return redirect()->route('dashboard');
 
         } catch (\Exception $e) {

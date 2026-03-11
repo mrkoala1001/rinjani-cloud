@@ -43,9 +43,30 @@
                        class="w-full pl-10 pr-4 py-2 border rounded shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm">
                 <i class="fas fa-search absolute left-3 top-2.5 text-gray-400"></i>
             </div>
-            <button @click="showModal = true" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition text-sm flex items-center justify-center">
-                <i class="fas fa-plus mr-2"></i>Add Secret
-            </button>
+            @php
+                $user = auth()->user();
+                $plan = $user->plan ?? 'basic';
+                $isExpired = $plan !== 'basic' && (!$user->plan_expires_at || $user->plan_expires_at->isPast());
+                $pConfig = \App\Helpers\PlanHelper::getPlanConfig($isExpired ? 'basic' : $plan);
+                $maxPppoe = $pConfig['quotas']['pppoe_active_max'];
+                $currentPppoe = count($secrets);
+                $quotaReached = ($maxPppoe != -1 && $currentPppoe >= $maxPppoe);
+            @endphp
+
+            @if($quotaReached)
+                <div class="group relative">
+                    <button disabled class="bg-gray-400 text-white font-bold py-2 px-4 rounded shadow cursor-not-allowed text-sm flex items-center justify-center opacity-70">
+                        <i class="fas fa-lock mr-2 text-xs"></i>Kuota PPPoE Penuh
+                    </button>
+                    <div class="absolute bottom-full right-0 mb-2 hidden group-hover:block w-48 bg-slate-900 text-white text-[10px] font-bold p-3 rounded-xl shadow-2xl z-50 text-center">
+                        Limit PPPoE Secret Plan {{ strtoupper($pConfig['name']) }} ({{ $maxPppoe }} data) sudah penuh.
+                    </div>
+                </div>
+            @else
+                <button @click="showModal = true" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow transition text-sm flex items-center justify-center">
+                    <i class="fas fa-plus mr-2"></i>Add Secret
+                </button>
+            @endif
         </div>
     </div>
 

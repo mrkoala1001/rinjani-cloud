@@ -209,17 +209,14 @@
                 @foreach($managedUsers as $user)
                 @php 
                     $origin = $user->origin ?? 'hotpot';
-                    $isP3pot = ($origin === 'p3pot');
+                    $isHotpot = ($origin === 'hotpot' || $origin === 'semua' || empty($origin));
+                    $isBlog = ($origin === 'blog' || $origin === 'semua');
                 @endphp
-                <tr class="hover:bg-slate-50/80 transition group border-b border-slate-50 {{ $isP3pot ? 'hover:bg-rose-50/50 border-rose-50/30' : '' }}">
+                <tr class="hover:bg-slate-50/80 transition group border-b border-slate-50">
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             <div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs
-                                @if($isP3pot)
-                                    bg-rose-100 text-rose-600
-                                @else
-                                    {{ $user->role === 'isp' ? 'bg-indigo-100 text-indigo-600' : ($user->role === 'owner' ? 'bg-emerald-100 text-emerald-600' : 'bg-purple-100 text-purple-600') }}
-                                @endif">
+                                {{ $user->role === 'isp' ? 'bg-indigo-100 text-indigo-600' : ($user->role === 'owner' ? 'bg-emerald-100 text-emerald-600' : 'bg-purple-100 text-purple-600') }}">
                                 {{ substr($user->name, 0, 1) }}
                             </div>
                             <div>
@@ -231,8 +228,6 @@
                     <td class="px-6 py-4">
                         @if($origin === 'hotpot')
                             <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">HOTSPOT</span>
-                        @elseif($origin === 'p3pot')
-                            <span class="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded">P3POT</span>
                         @elseif($origin === 'blog')
                             <span class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded">BLOG</span>
                         @elseif($origin === 'semua')
@@ -241,11 +236,7 @@
                     </td>
                     <td class="px-6 py-4">
                         <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider
-                            @if($isP3pot)
-                                bg-rose-50 text-rose-700
-                            @else
-                                {{ $user->role === 'isp' ? 'bg-indigo-50 text-indigo-700' : ($user->role === 'owner' ? 'bg-emerald-50 text-emerald-700' : 'bg-purple-50 text-purple-700') }}
-                            @endif">
+                            {{ $user->role === 'isp' ? 'bg-indigo-50 text-indigo-700' : ($user->role === 'owner' ? 'bg-emerald-50 text-emerald-700' : 'bg-purple-50 text-purple-700') }}">
                             {{ $user->role }}
                         </span>
                     </td>

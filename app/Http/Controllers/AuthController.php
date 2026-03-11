@@ -19,6 +19,142 @@ class AuthController extends Controller
         return view('depootcom.admin.blog.login');
     }
 
+    public function showRegister()
+    {
+        return view('auth.register');
+    }
+
+    public function register(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'username' => 'required|string|max:255|unique:users',
+            'whatsapp' => 'required|string|max:20',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = \App\Models\User::create([
+            'name' => $request->name,
+            'username' => $request->username,
+            'whatsapp' => $request->whatsapp,
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'role' => 'owner-member',
+            'plan' => 'basic',
+            'is_active' => true,
+        ]);
+
+        auth()->login($user);
+
+        return redirect()->route('dashboard')->with('success', 'Selamat datang! Akun Anda telah berhasil dibuat.');
+    }
+
+    public function showForgotPassword()
+    {
+        return view('auth.passwords.forgot');
+    }
+
+    public function sendResetCode(Request $request)
+    {
+        $request->validate(['identifier' => 'required']);
+        $identifier = $request->identifier;
+
+        $user = \App\Models\User::where('username', $identifier)
+            ->orWhere('whatsapp', $identifier)
+            ->first();
+
+        if (!$user || !$user->whatsapp) {
+            return back()->with('error', 'Akun atau nomor WhatsApp tidak ditemukan.');
+        }
+
+        $otp = rand(100000, 999999);
+        $expiresAt = now()->addMinutes(15);
+
+        \Illuminate\Support\Facades\DB::table('password_reset_was')->updateOrInsert(
+            ['whatsapp' => $user->whatsapp],
+            [
+                'token' => $otp,
+                'expires_at' => $expiresAt,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
+        );
+
+        // Send via Fonnte
+        $message = "Halo *{$user->name}*,\n\nKode reset password HotPot Anda adalah: *{$otp}*\n\nKode ini berlaku selama 15 menit. Jangan berikan kode ini kepada siapapun.";
+        
+        try {
+            \Illuminate\Support\Facades\Http::withHeaders([
+                'Authorization' => env('FONNTE_TOKEN')
+            ])->asForm()->post('https://api.fonnte.com/send', [
+                'target' => $user->whatsapp,
+                'message' => $message,
+            ]);
+            
+            return redirect()->route('password.otp.view', ['wa' => $user->whatsapp])
+                ->with('success', 'Kode reset telah dikirim ke WhatsApp Anda.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal mengirim pesan WhatsApp. Silakan coba lagi.');
+        }
+    }
+
+    public function showOtpForm(Request $request)
+    {
+        $whatsapp = $request->wa;
+        return view('auth.passwords.otp', compact('whatsapp'));
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'whatsapp' => 'required',
+            'otp' => 'required|digits:6',
+        ]);
+
+        $reset = \Illuminate\Support\Facades\DB::table('password_reset_was')
+            ->where('whatsapp', $request->whatsapp)
+            ->where('token', $request->otp)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$reset) {
+            return back()->with('error', 'Kode OTP salah atau sudah kadaluarsa.');
+        }
+
+        return view('auth.passwords.reset', ['whatsapp' => $request->whatsapp, 'token' => $request->otp]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'whatsapp' => 'required',
+            'token' => 'required',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $reset = \Illuminate\Support\Facades\DB::table('password_reset_was')
+            ->where('whatsapp', $request->whatsapp)
+            ->where('token', $request->token)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$reset) {
+            return redirect()->route('password.request')->with('error', 'Sesi reset sudah kadaluarsa.');
+        }
+
+        $user = \App\Models\User::where('whatsapp', $request->whatsapp)->first();
+        if ($user) {
+            $user->update([
+                'password' => \Illuminate\Support\Facades\Hash::make($request->password)
+            ]);
+
+            \Illuminate\Support\Facades\DB::table('password_reset_was')->where('whatsapp', $request->whatsapp)->delete();
+
+            return redirect()->route('login')->with('success', 'Password berhasil diubah! Silakan login dengan password baru.');
+        }
+
+        return back()->with('error', 'Gagal mengubah password.');
+    }
+
     public function login(Request $request)
     {
         $request->validate([
@@ -71,12 +207,6 @@ class AuthController extends Controller
             return redirect()->route('hotsupport.dashboard');
         }
 
-        // Origin-based redirection for owners/others
-        if (auth()->user()->origin === 'p3pot') {
-            if (in_array(auth()->user()->role, ['owner', 'owner-member'])) {
-                return redirect()->route('p3pot.owner.dashboard'); 
-            }
-        }
 
         if (auth()->user()->role === 'reseller') {
             return redirect()->route('reseller.dashboard');

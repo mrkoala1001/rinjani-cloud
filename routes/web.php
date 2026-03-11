@@ -125,6 +125,13 @@ Route::domain('hotpot.depootcom.site')->group(function () {
     // Public Authentication Routes
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
+    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.post');
+    Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
+    Route::post('/forgot-password', [AuthController::class, 'sendResetCode'])->name('password.wa.send');
+    Route::get('/forgot-password/otp', [AuthController::class, 'showOtpForm'])->name('password.otp.view');
+    Route::post('/forgot-password/verify', [AuthController::class, 'verifyOtp'])->name('password.otp.verify');
+    Route::post('/forgot-password/reset', [AuthController::class, 'resetPassword'])->name('password.update.custom');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/logout', [AuthController::class, 'logout']); // Fallback for easier logout
 
@@ -358,11 +365,9 @@ Route::domain('hotpot.depootcom.site')->group(function () {
              Route::get('/reports', [\App\Http\Controllers\BuilderController::class, 'reports'])->name('reports');
              Route::get('/reports/{id}', [\App\Http\Controllers\BuilderController::class, 'viewReport'])->name('reports.show');
              Route::get('/impersonate/{id}', [\App\Http\Controllers\BuilderController::class, 'impersonate'])->name('impersonate');
-             Route::get('/impersonate/p3pot/{id}', [\App\Http\Controllers\BuilderController::class, 'impersonateP3pot'])->name('impersonate.p3pot');
              Route::get('/user/{id}/edit', [\App\Http\Controllers\BuilderController::class, 'editUser'])->name('user.edit');
              Route::put('/user/{id}', [\App\Http\Controllers\BuilderController::class, 'updateUser'])->name('user.update');
              Route::delete('/user/{id}', [\App\Http\Controllers\BuilderController::class, 'deleteUser'])->name('user.destroy');
-             Route::delete('/user/p3pot/{id}', [\App\Http\Controllers\BuilderController::class, 'deleteP3potUser'])->name('user.p3pot.destroy');
              Route::post('/reports/{id}/read', [\App\Http\Controllers\BuilderController::class, 'markAsRead'])->name('reports.read');
              Route::post('/reports/{id}/reply', [\App\Http\Controllers\BuilderController::class, 'replyTicket'])->name('reports.reply');
              Route::post('/reports/{id}/status', [\App\Http\Controllers\BuilderController::class, 'updateStatus'])->name('reports.status');
@@ -443,41 +448,8 @@ Route::domain('www.hotpot.depootcom.site')->group(function () {
 });
 
 // --------------------------------------------------------------------------
-// P3POT.DEPOOTCOM.COM - P3POT RADIUS BILLING
+// TELEGRAM BOT WEBHOOK
 // --------------------------------------------------------------------------
-Route::domain('p3pot.depootcom.site')->group(function () {
-    Route::get('/', function() {
-        return view('p3pot.index');
-    })->name('p3pot.landing');
-
-    // Auth Routes
-    Route::get('/login', [\App\Http\Controllers\P3pot\AuthController::class, 'showLogin'])->name('p3pot.login');
-    Route::post('/login', [\App\Http\Controllers\P3pot\AuthController::class, 'login'])->name('p3pot.login.post');
-    Route::post('/logout', [\App\Http\Controllers\P3pot\AuthController::class, 'logout'])->name('p3pot.logout');
-
-    // Authenticated P3POT Routes
-    Route::middleware('auth:web,p3pot')->group(function () {
-        
-        // Owner Routes
-        Route::prefix('owner')->name('p3pot.owner.')->group(function() {
-            Route::get('/dashboard', [\App\Http\Controllers\P3pot\OwnerController::class, 'index'])->name('dashboard');
-            Route::get('/pppoe', [\App\Http\Controllers\P3pot\OwnerController::class, 'pppoe'])->name('pppoe');
-            Route::get('/payment-gateway', [\App\Http\Controllers\P3pot\OwnerController::class, 'paymentGateway'])->name('payment_gateway');
-            Route::post('/payment-gateway', [\App\Http\Controllers\P3pot\OwnerController::class, 'storePaymentGateway'])->name('payment_gateway.store');
-            
-            Route::get('/customers', [\App\Http\Controllers\P3pot\OwnerController::class, 'customers'])->name('customers');
-            Route::get('/billing', [\App\Http\Controllers\P3pot\OwnerController::class, 'billing'])->name('billing');
-            Route::get('/settings', [\App\Http\Controllers\P3pot\OwnerController::class, 'settings'])->name('settings');
-            Route::get('/reports', [\App\Http\Controllers\P3pot\OwnerController::class, 'reports'])->name('reports');
-            Route::post('/send-report', [\App\Http\Controllers\P3pot\OwnerController::class, 'sendReport'])->name('send_report');
-        });
-
-        // Customer Routes
-        Route::prefix('customer')->name('p3pot.customer.')->group(function() {
-            Route::get('/dashboard', [\App\Http\Controllers\P3pot\CustomerController::class, 'index'])->name('dashboard');
-        });
-    });
-});
 
 // --------------------------------------------------------------------------
 // TELEGRAM BOT WEBHOOK

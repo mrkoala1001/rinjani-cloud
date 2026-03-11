@@ -77,9 +77,7 @@
                         <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2 ml-1">Akses Aplikasi (Origin)</label>
                         <select name="origin" class="w-full px-4 py-3.5 bg-slate-50 border-slate-100 rounded-2xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition duration-300 text-slate-700 font-bold">
                             <option value="hotpot" {{ old('origin', $user->origin ?? 'hotpot') == 'hotpot' ? 'selected' : '' }}>Hotpot (Only)</option>
-                            <option value="p3pot" {{ old('origin', $user->origin) == 'p3pot' ? 'selected' : '' }}>P3POT (Only)</option>
-                            <option value="blog" {{ old('origin', $user->origin) == 'blog' ? 'selected' : '' }}>Blog / Landing</option>
-                            <option value="semua" {{ old('origin', $user->origin) == 'semua' ? 'selected' : '' }}>Semua (Hotpot + P3POT + Blog)</option>
+                            <option value="semua" {{ old('origin', $user->origin) == 'semua' ? 'selected' : '' }}>Semua Aplikasi</option>
                         </select>
                         @error('origin') <p class="text-rose-500 text-[10px] mt-1 font-bold">{{ $message }}</p> @enderror
                     </div>

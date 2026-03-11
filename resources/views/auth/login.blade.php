@@ -72,7 +72,7 @@
                         <label class="block text-slate-700 text-sm font-bold" for="password">
                             Password
                         </label>
-                        <a href="#" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition">Forgot?</a>
+                        <a href="{{ route('password.request') }}" class="text-xs font-bold text-blue-600 hover:text-blue-800 transition">Forgot?</a>
                     </div>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
@@ -111,6 +111,9 @@
                         </svg>
                         Google
                     </a>
+                </div>
+                <div class="mt-8 text-center text-sm">
+                    <p class="text-slate-500">Belum punya akun? <a href="{{ route('register') }}" class="text-blue-600 font-bold hover:underline">Daftar Sekarang</a></p>
                 </div>
             </div>
         </div>

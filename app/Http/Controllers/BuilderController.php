@@ -44,36 +44,19 @@ class BuilderController extends Controller
         ));
     }
 
-    public function impersonateP3pot($id)
-    {
-        $user = User::where('origin', 'p3pot')->findOrFail($id);
-        
-        // Store original ID
-        session(['p3pot_impersonated_by' => auth()->id()]);
-        
-        // Login as User using p3pot guard
-        auth()->guard('p3pot')->login($user);
-        
-        $targetRoute = ($user->role === 'admin') ? 'p3pot.owner.dashboard' : 'p3pot.customer.dashboard';
-        return redirect()->route($targetRoute)->with('success', "Logged in as P3POT {$user->role}: {$user->username}");
-    }
 
     public function impersonate($id)
     {
         $user = User::whereIn('role', ['isp', 'owner', 'owner-member'])->findOrFail($id);
         
+        \Log::info("User " . auth()->user()->username . " (ISP/Admin) began impersonating " . $user->username);
+    
         // Store original ID
         session(['impersonated_by' => auth()->id()]);
-        
-        // Login as User
+        session(['impersonator_name' => auth()->user()->name]);
+    
+        // Login as owner
         auth()->login($user);
-        
-        // Origin-based redirection
-        $origin = $user->origin ?? 'hotpot';
-        
-        if ($origin === 'p3pot') {
-            return redirect()->away('http://p3pot.depootcom.site/owner/dashboard')->with('success', "Logged in as P3POT {$user->role}: {$user->name}");
-        }
         
         // Default Hotspot redirection
         $targetRoute = ($user->role === 'isp') ? 'hotsupport.dashboard' : 'dashboard';
@@ -96,7 +79,7 @@ class BuilderController extends Controller
             'email' => 'nullable|string|email|max:255|unique:users,email,'.$user->id,
             'password' => 'nullable|string|min:8',
             'is_active' => 'required|boolean',
-            'origin' => 'required|in:hotpot,blog,p3pot,semua',
+            'origin' => 'required|in:hotpot,blog,semua',
         ]);
 
         $data = [
@@ -147,15 +130,6 @@ class BuilderController extends Controller
         return redirect()->route('builder.dashboard')->with('success', 'Account and its associated data (if any) have been permanently deleted.');
     }
 
-    public function deleteP3potUser($id)
-    {
-        $user = User::where('origin', 'p3pot')->findOrFail($id);
-        
-        // Delete user
-        $user->delete();
-
-        return redirect()->route('builder.dashboard')->with('success', "P3POT Account {$user->username} has been deleted.");
-    }
 
     public function storeBroadcast(Request $request)
     {
@@ -192,9 +166,9 @@ class BuilderController extends Controller
             'username' => 'required|string|max:255|unique:users',
             'email' => 'nullable|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
-            'role' => 'required|in:isp,builder,owner',
+            'role' => 'required|in:isp,builder',
             'location' => 'nullable|string|max:255',
-            'origin' => 'required|in:hotpot,blog,p3pot,semua',
+            'origin' => 'required|in:hotpot,blog,semua',
             'notes' => 'nullable|string',
         ]);
 

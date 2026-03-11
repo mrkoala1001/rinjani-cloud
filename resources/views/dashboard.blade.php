@@ -60,6 +60,31 @@
                     </p>
                 </div>
             </div>
+        @else
+            <!-- Plan Status Card -->
+            @php
+                $user = auth()->user();
+                $plan = $user->plan ?? 'basic';
+                $isExpired = $plan !== 'basic' && (!$user->plan_expires_at || $user->plan_expires_at->isPast());
+                $pConfig = \App\Helpers\PlanHelper::getPlanConfig($isExpired ? 'basic' : $plan);
+            @endphp
+            <div class="bg-gradient-to-br from-{{ $pConfig['color'] }}-600 to-{{ $pConfig['color'] }}-700 rounded-2xl shadow-lg p-6 hover:shadow-xl transition group text-white relative overflow-hidden">
+                <div class="absolute -right-4 -bottom-4 opacity-10 text-8xl rotate-12 group-hover:scale-110 transition-transform duration-500">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="px-2 py-0.5 bg-white/20 rounded text-[10px] font-black uppercase tracking-widest border border-white/30 truncate max-w-[120px]">
+                            @if($isExpired) \u26a0\ufe0f EXPIRED (BASIC) @else ACTIVE PLAN @endif
+                        </span>
+                        <a href="{{ route('plan.index') }}" class="text-[9px] font-bold underline hover:text-white/80 transition uppercase">Ganti Plan</a>
+                    </div>
+                    <h3 class="text-2xl font-black tracking-tight mb-1">{{ $pConfig['name'] }}</h3>
+                    <p class="text-[10px] font-bold text-{{ $pConfig['color'] }}-100/80 uppercase">
+                        @if($plan === 'basic') Selamanya (Gratis) @else Berakhir: {{ $user->plan_expires_at->format('d M Y') }} @endif
+                    </p>
+                </div>
+            </div>
         @endif
 
         <!-- Card 1: Voucher Realtime -->
@@ -95,8 +120,7 @@
             <p class="text-2xl font-black text-slate-800" x-text="formatRupiah(stats.billingManual)"></p>
         </div>
 
-    
-        <!-- Card 3: Total User Aktif -->
+        <!-- Card 4: Total User Aktif -->
         <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-200 hover:shadow-md transition group">
             <div class="flex items-center mb-4">
                 <div class="p-3 rounded-xl bg-emerald-50 text-emerald-500 mr-4 group-hover:scale-110 transition">
@@ -107,20 +131,6 @@
             <div class="flex items-baseline gap-2">
                 <p class="text-2xl font-black text-slate-800" x-text="stats.hotspotActive"></p>
                 <span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Online</span>
-            </div>
-        </div>
-
-        <!-- Card 4: Total Jumlah User -->
-        <div class="bg-white rounded-2xl shadow-sm p-6 border border-slate-200 hover:shadow-md transition group">
-            <div class="flex items-center mb-4">
-                <div class="p-3 rounded-xl bg-rose-50 text-rose-500 mr-4 group-hover:scale-110 transition">
-                    <i class="fas fa-users fa-lg"></i>
-                </div>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total Voucher</p>
-            </div>
-            <div class="flex items-baseline gap-2">
-                <p class="text-2xl font-black text-slate-800" x-text="stats.totalVoucher"></p>
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-tighter">Generated</span>
             </div>
         </div>
     </div>
@@ -154,8 +164,83 @@
             </div>
         </div>
         
+        <!-- Plan & Quota Management -->
+        <div class="mt-8 bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+            <div class="flex items-center justify-between mb-8 pb-4 border-b border-slate-50">
+                <h3 class="text-lg font-black text-slate-800 flex items-center">
+                    <i class="fas fa-chart-pie mr-3 text-orange-500"></i> Status Plan & Kuota
+                </h3>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Update Real-time</span>
+            </div>
+
+            @php
+                $user = auth()->user();
+                $plan = $user->plan ?? 'basic';
+                $isExpired = $plan !== 'basic' && (!$user->plan_expires_at || $user->plan_expires_at->isPast());
+                $pConfig = \App\Helpers\PlanHelper::getPlanConfig($isExpired ? 'basic' : $plan);
+
+                $distCount = \App\Models\BillingHistory::where('user_id', auth()->id())->where('reseller_id', '>', 0)->count();
+                $custCount = \App\Models\CustomerMember::where('user_id', auth()->id())->count();
+                $maxDist = $pConfig['quotas']['voucher_distribution_max'];
+                $maxCust = $pConfig['quotas']['customer_max'];
+                $maxPppoe = $pConfig['quotas']['pppoe_active_max'];
+            @endphp
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Quota Generate -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <span class="text-xs font-bold text-slate-500 uppercase">Voucher Generate</span>
+                        <span class="text-xs font-black text-slate-800">{{ $pConfig['quotas']['voucher_generate_max'] == -1 ? 'Unlimited' : $pConfig['quotas']['voucher_generate_max'] . ' / gen' }}</span>
+                    </div>
+                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-blue-500 rounded-full" style="width: 100%"></div>
+                    </div>
+                    <p class="text-[9px] text-slate-400 font-medium tracking-tight leading-relaxed">Limit per satu kali klik proses pembuatan voucher hotspot.</p>
+                </div>
+
+                <!-- Quota Distribusi -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <span class="text-xs font-bold text-slate-500 uppercase">Total Distribusi</span>
+                        <span class="text-xs font-black text-slate-800">{{ number_format($distCount) }} / {{ $maxDist == -1 ? '∞' : number_format($maxDist) }}</span>
+                    </div>
+                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        @php $distPercent = ($maxDist == -1) ? 5 : ($distCount / $maxDist * 100); @endphp
+                        <div class="h-full bg-orange-500 rounded-full" style="width: {{ min(100, $distPercent) }}%"></div>
+                    </div>
+                    <p class="text-[9px] text-slate-400 font-medium tracking-tight leading-relaxed">Jumlah total voucher yang sudah didistribusikan ke reseller.</p>
+                </div>
+
+                <!-- Quota PPPoE -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <span class="text-xs font-bold text-slate-500 uppercase">PPPoE Registrasi</span>
+                        <span class="text-xs font-black text-slate-800">{{ $maxPppoe == -1 ? 'Unlimited' : $maxPppoe . ' Users' }}</span>
+                    </div>
+                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div class="h-full bg-violet-500 rounded-full" style="width: 100%"></div>
+                    </div>
+                    <p class="text-[9px] text-slate-400 font-medium tracking-tight leading-relaxed">Limit maksimal user PPPoE Secret yang dapat didaftarkan.</p>
+                </div>
+
+                <!-- Quota Customer -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-end">
+                        <span class="text-xs font-bold text-slate-500 uppercase">Database Pelanggan</span>
+                        <span class="text-xs font-black text-slate-800">{{ number_format($custCount) }} / {{ $maxCust == -1 ? '∞' : number_format($maxCust) }}</span>
+                    </div>
+                    <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        @php $custPercent = ($maxCust == -1) ? 5 : ($custCount / $maxCust * 100); @endphp
+                        <div class="h-full bg-emerald-500 rounded-full" style="width: {{ min(100, $custPercent) }}%"></div>
+                    </div>
+                    <p class="text-[9px] text-slate-400 font-medium tracking-tight leading-relaxed">Jumlah data pelanggan yang tersimpan di database CRM.</p>
+                </div>
+            </div>
+        </div>
+
         <template x-if="stats.routerStatus === 'Connected' || stats.routerStatus === 'Loading...'">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
                 <!-- Router Resources -->
                 <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative overflow-hidden group">
                     <div class="absolute -right-4 -bottom-4 text-slate-50 text-8xl transition-transform group-hover:scale-110">
