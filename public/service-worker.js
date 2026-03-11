@@ -1,6 +1,6 @@
 const CACHE_NAME = 'hotpot-v1';
 const urlsToCache = [
-    '/app/dashboard'
+    '/'
 ];
 
 self.addEventListener('install', event => {

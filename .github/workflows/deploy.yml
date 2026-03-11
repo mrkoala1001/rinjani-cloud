@@ -1,0 +1,41 @@
+name: Deploy to Rinja-Cloud
+
+on:
+  push:
+    branches: [ "feature/wan-static-and-pppoe-meta", "main" ]
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Pull Latest Changes
+        run: |
+          cd /var/www/hotpot
+          git pull origin ${{ github.ref_name }}
+
+      - name: Install Dependencies (PHP)
+        run: |
+          cd /var/www/hotpot
+          composer install --no-dev --optimize-autoloader
+
+      - name: Build Assets
+        run: |
+          cd /var/www/hotpot
+          npm install
+          npm run build
+
+      - name: Run Migrations
+        run: |
+          cd /var/www/hotpot
+          php artisan migrate --force
+
+      - name: Clear Cache
+        run: |
+          cd /var/www/hotpot
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
